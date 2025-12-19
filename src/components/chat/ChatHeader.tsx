@@ -1,11 +1,11 @@
-import { Bot, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 export const ChatHeader = () => {
   return (
     <header className="glass border-b border-border/50 px-6 py-4">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center glow-sm">
-          <Bot className="w-5 h-5 text-primary-foreground" />
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center glow-sm text-2xl">
+          🦙
         </div>
         <div className="flex-1">
           <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
