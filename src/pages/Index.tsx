@@ -30,7 +30,7 @@ const Index = () => {
                   Comece uma conversa
                 </h2>
                 <p className="text-muted-foreground text-sm max-w-sm">
-                  Digite uma mensagem abaixo para começar a conversar com a Nova AI.
+                  Digite uma mensagem abaixo para começar a conversar com a OllamaCode.
                   Estou aqui para ajudar!
                 </p>
               </div>
@@ -56,7 +56,7 @@ const Index = () => {
         <div className="max-w-3xl mx-auto px-4 py-4">
           <ChatInput onSend={sendMessage} disabled={isTyping} />
           <p className="text-center text-xs text-muted-foreground mt-3">
-            Nova AI pode cometer erros. Verifique informações importantes.
+            OllamaCode pode cometer erros. Verifique informações importantes.
           </p>
         </div>
       </footer>

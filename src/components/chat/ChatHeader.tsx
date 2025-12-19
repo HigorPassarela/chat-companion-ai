@@ -9,10 +9,10 @@ export const ChatHeader = () => {
         </div>
         <div className="flex-1">
           <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            Nova AI
+            Ollama
             <Sparkles className="w-4 h-4 text-primary animate-pulse-glow" />
           </h1>
-          <p className="text-xs text-muted-foreground">Sempre pronta para ajudar</p>
+          <p className="text-xs text-muted-foreground">codellama:7b</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
