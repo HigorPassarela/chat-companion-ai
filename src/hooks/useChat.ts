@@ -5,34 +5,34 @@ interface Message {
   id: string;
   content: string;
   role: "user" | "assistant";
+  imageUrl?: string; 
 }
 
 export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, imageFile?: File) => {
     const userMessage: Message = {
       id: Date.now().toString(),
       content,
       role: "user",
+      imageUrl: imageFile ? URL.createObjectURL(imageFile) : undefined,
     };
-
-    // adiciona a mensagem do usuário ao estado
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
     try {
-      // 🔹 Requisição POST ao backend Flask
+      const formData = new FormData();
+      formData.append("pergunta", content);
+      if (imageFile) formData.append("image", imageFile); 
+
       const response = await fetch("http://localhost:5000/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pergunta: content }),
+        body: formData,
       });
 
       const data = await response.json();
-
-      // 🔹 Mensagem da IA vinda da resposta do Flask
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data.resposta || "Erro ao processar resposta.",

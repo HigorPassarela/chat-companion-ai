@@ -15,7 +15,12 @@ export const Chat = () => {
 
       <main className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.map((m) => (
-          <ChatMessage key={m.id} role={m.role} content={m.content} />
+          <ChatMessage
+            key={m.id}
+            role={m.role}
+            content={m.content}
+            imageUrl={m.imageUrl}
+          />
         ))}
         {isTyping && <TypingIndicator />}
       </main>
