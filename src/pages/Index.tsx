@@ -4,10 +4,12 @@ import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { useChat } from "@/hooks/useChat";
+import { useBackendStatus } from "@/hooks/useBackendStatus";
 import { MessageSquare } from "lucide-react";
 
 const Index = () => {
   const { messages, isTyping, sendMessage } = useChat();
+  const { online } = useBackendStatus(); 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -16,8 +18,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <ChatHeader />
-      
+      <ChatHeader online={online} />
+
       <main className="flex-1 overflow-hidden">
         <div className="h-full max-w-3xl mx-auto flex flex-col">
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">

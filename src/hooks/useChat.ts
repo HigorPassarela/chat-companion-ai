@@ -1,3 +1,4 @@
+// src/hooks/useChat.ts
 import { useState, useCallback } from "react";
 
 interface Message {
@@ -6,45 +7,51 @@ interface Message {
   role: "user" | "assistant";
 }
 
-const AI_RESPONSES = [
-  "Olá! Como posso ajudá-lo hoje? Estou aqui para responder suas perguntas e auxiliar no que precisar.",
-  "Essa é uma ótima pergunta! Deixe-me pensar sobre isso... Com base nas informações disponíveis, posso dizer que existem várias abordagens para isso.",
-  "Interessante! Posso ver que você está explorando um tópico fascinante. Gostaria de saber mais sobre o contexto para dar uma resposta mais precisa.",
-  "Entendi perfeitamente o que você precisa. Aqui está uma explicação detalhada que pode ajudá-lo a entender melhor esse assunto.",
-  "Fico feliz em ajudar! Com base na sua pergunta, tenho algumas sugestões que podem ser úteis para você.",
-  "Excelente ponto! Isso me faz pensar em várias possibilidades. Vou compartilhar alguns insights relevantes.",
-];
-
 export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 
-  const sendMessage = useCallback((content: string) => {
+  const sendMessage = useCallback(async (content: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
       content,
       role: "user",
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    // adiciona a mensagem do usuário ao estado
+    setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
-    // Simulate AI response delay
-    const delay = 1000 + Math.random() * 2000;
-    setTimeout(() => {
-      const aiResponse: Message = {
+    try {
+      // 🔹 Requisição POST ao backend Flask
+      const response = await fetch("http://localhost:5000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pergunta: content }),
+      });
+
+      const data = await response.json();
+
+      // 🔹 Mensagem da IA vinda da resposta do Flask
+      const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)],
+        content: data.resposta || "Erro ao processar resposta.",
         role: "assistant",
       };
-      setMessages((prev) => [...prev, aiResponse]);
+
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error("[useChat] Erro:", error);
+      setMessages(prev => [
+        ...prev,
+        { id: (Date.now() + 1).toString(), 
+          content: "Erro ao conectar com o servidor.", 
+          role: "assistant" },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, delay);
+    }
   }, []);
 
-  return {
-    messages,
-    isTyping,
-    sendMessage,
-  };
+  return { messages, isTyping, sendMessage };
 };

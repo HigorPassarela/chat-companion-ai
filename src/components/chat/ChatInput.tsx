@@ -10,18 +10,17 @@ export const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
   const [message, setMessage] = useState("");
 
   const handleSend = () => {
-    if (message.trim() && !disabled) {
-      onSend(message.trim());
-      setMessage("");
-    }
+    if(!message.trim() || disabled) return;
+    onSend(message.trim());
+    setMessage("");  
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if(e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
-  };
+  }
 
   return (
     <div className="glass rounded-2xl p-2">
@@ -34,12 +33,6 @@ export const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
           disabled={disabled}
           rows={1}
           className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground text-sm px-3 py-2.5 resize-none focus:outline-none min-h-[44px] max-h-32"
-          style={{ height: "auto" }}
-          onInput={(e) => {
-            const target = e.target as HTMLTextAreaElement;
-            target.style.height = "auto";
-            target.style.height = Math.min(target.scrollHeight, 128) + "px";
-          }}
         />
         <button
           onClick={handleSend}
