@@ -2,44 +2,25 @@ import { Bot, User } from "lucide-react";
 import { ChatHeader } from "./ChatHeader";
 import { ChatInput } from "./ChatInput";
 
-// interface Message {
-//   sender: "user" | "bot";
-//   text: string;
-// }
-
-// export const Chat = () => {
-//   const [messages, setMessages] = useState<Message[]>([]);
-//   const [loading, setLoading] = useState(false);
-
-//   try {
-//     const response = await fetch("http://localhost:5000/chat"), {
-//       method: "POST",
-//       headers: { "" }
-//     }
-
-//   } catch (error) {
-    
-//   }
-// }
-
 interface ChatMessageProps {
   content: string;
   role: "user" | "assistant";
+  imageUrl?: string;
   isNew?: boolean;
 }
 
-export const ChatMessage = ({ content, role, isNew = false }: ChatMessageProps) => {
+export const ChatMessage = ({ content, role, imageUrl ,isNew = false }: ChatMessageProps) => {
   const isUser = role === "user";
 
   return (
     <div
-      className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""} ${isNew ? "animate-fade-in-up" : ""}`}
+      className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""} ${
+        isNew ? "animate-fade-in-up" : ""
+      }`}
     >
       <div
         className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-          isUser
-            ? "bg-secondary"
-            : "bg-gradient-to-br from-primary to-accent glow-sm"
+          isUser ? "bg-secondary" : "bg-gradient-to-br from-primary to-accent glow-sm"
         }`}
       >
         {isUser ? (
@@ -48,6 +29,7 @@ export const ChatMessage = ({ content, role, isNew = false }: ChatMessageProps) 
           <Bot className="w-4 h-4 text-primary-foreground" />
         )}
       </div>
+
       <div
         className={`max-w-[80%] px-4 py-3 rounded-2xl ${
           isUser
@@ -55,7 +37,17 @@ export const ChatMessage = ({ content, role, isNew = false }: ChatMessageProps) 
             : "bg-ai-bubble text-foreground rounded-bl-md border border-border/50"
         }`}
       >
+        {/* Texto da mensagem */}
         <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
+
+        {/* Imagem enviada (mostrar abaixo do texto ou sozinha) */}
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt="Imagem enviada"
+            className="mt-2 rounded-lg max-h-64 object-contain"
+          />
+        )}
       </div>
     </div>
   );

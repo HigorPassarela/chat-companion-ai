@@ -43,6 +43,7 @@ const Index = () => {
                     key={message.id}
                     content={message.content}
                     role={message.role}
+                    imageUrl={message.imageUrl}
                     isNew={index === messages.length - 1}
                   />
                 ))}
