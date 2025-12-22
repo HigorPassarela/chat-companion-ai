@@ -1,4 +1,26 @@
 import { Bot, User } from "lucide-react";
+import { ChatHeader } from "./ChatHeader";
+import { ChatInput } from "./ChatInput";
+
+// interface Message {
+//   sender: "user" | "bot";
+//   text: string;
+// }
+
+// export const Chat = () => {
+//   const [messages, setMessages] = useState<Message[]>([]);
+//   const [loading, setLoading] = useState(false);
+
+//   try {
+//     const response = await fetch("http://localhost:5000/chat"), {
+//       method: "POST",
+//       headers: { "" }
+//     }
+
+//   } catch (error) {
+    
+//   }
+// }
 
 interface ChatMessageProps {
   content: string;
