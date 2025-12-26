@@ -1,15 +1,51 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 interface Message {
   id: string;
   content: string;
   role: "user" | "assistant";
-  imageUrl?: string; 
+  imageUrl?: string;
+  timestamp: number;
 }
+
+const STORAGE_KEY = "ollamacode_chat_history";
 
 export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+
+  // 💾 Carregar mensagens do localStorage ao iniciar
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setMessages(parsed);
+        console.log(`[useChat] ${parsed.length} mensagens carregadas do localStorage`);
+      }
+    } catch (error) {
+      console.error("[useChat] Erro ao carregar histórico:", error);
+    }
+  }, []);
+
+  // 💾 Salvar mensagens no localStorage sempre que mudar
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+        console.log(`[useChat] ${messages.length} mensagens salvas no localStorage`);
+      } catch (error) {
+        console.error("[useChat] Erro ao salvar histórico:", error);
+      }
+    }
+  }, [messages]);
+
+  // 🗑️ Função para limpar todo o histórico
+  const clearHistory = useCallback(() => {
+    setMessages([]);
+    localStorage.removeItem(STORAGE_KEY);
+    console.log("[useChat] Histórico limpo");
+  }, []);
 
   const sendMessage = useCallback(async (content: string, imageFile?: File) => {
     // Adicionar mensagem do usuário
@@ -18,6 +54,7 @@ export const useChat = () => {
       content,
       role: "user",
       imageUrl: imageFile ? URL.createObjectURL(imageFile) : undefined,
+      timestamp: Date.now(),
     };
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
@@ -42,7 +79,7 @@ export const useChat = () => {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json", // ⭐ IMPORTANTE!
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
       });
@@ -65,6 +102,7 @@ export const useChat = () => {
           id: assistantMessageId,
           content: "",
           role: "assistant",
+          timestamp: Date.now(),
         },
       ]);
 
@@ -129,13 +167,14 @@ export const useChat = () => {
           id: (Date.now() + 1).toString(),
           content: `❌ Erro ao conectar com o servidor: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
           role: "assistant",
+          timestamp: Date.now(),
         },
       ]);
       setIsTyping(false);
     }
   }, []);
 
-  return { messages, isTyping, sendMessage };
+  return { messages, isTyping, sendMessage, clearHistory };
 };
 
 // Função auxiliar para ler conteúdo de arquivo

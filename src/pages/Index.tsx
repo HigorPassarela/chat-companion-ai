@@ -6,9 +6,10 @@ import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { useChat } from "@/hooks/useChat";
 import { useBackendStatus } from "@/hooks/useBackendStatus";
 import { MessageSquare, WifiOff, Sparkles } from "lucide-react";
+import { toast } from "sonner"; // Opcional: para notificações
 
 const Index = () => {
-  const { messages, isTyping, sendMessage } = useChat();
+  const { messages, isTyping, sendMessage, clearHistory } = useChat();
   const { online } = useBackendStatus();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -30,10 +31,21 @@ const Index = () => {
     sendMessage(suggestion);
   };
 
+  const handleClearChat = () => {
+    clearHistory();
+    // Opcional: mostrar toast de confirmação
+    // toast.success("Conversa limpa com sucesso!");
+    console.log("[Index] Conversa limpa");
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <ChatHeader online={online} />
+      {/* Header com contador e botão de limpar */}
+      <ChatHeader 
+        online={online} 
+        onClearChat={handleClearChat}
+        messageCount={messages.length}
+      />
 
       {/* Alerta de conexão offline */}
       {!online && (
