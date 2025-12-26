@@ -1,5 +1,6 @@
 import { Bot, Wifi, WifiOff } from "lucide-react";
 import { ClearChatButton } from "./ClearChatButton";
+import { cn } from "@/lib/utils";
 
 interface ChatHeaderProps {
   online: boolean;
@@ -10,30 +11,34 @@ interface ChatHeaderProps {
 export const ChatHeader = ({ online, onClearChat, messageCount = 0 }: ChatHeaderProps) => {
   return (
     <header className="glass border-b border-border/50 sticky top-0 z-10">
-      <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className={cn(
+        "max-w-3xl mx-auto px-4 py-3 flex items-center justify-between",
+        "lg:px-4", // Padding normal em desktop
+        "chat-header-mobile-padding" // Padding extra no mobile para o botão toggle
+      )}>
         {/* Logo e status */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
             <Bot className="w-6 h-6 text-primary-foreground" />
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-foreground">OllamaCode</h1>
-            <div className="flex items-center gap-1.5 text-xs">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-bold text-foreground truncate">OllamaCode</h1>
+            <div className="flex items-center gap-1.5 text-xs flex-wrap">
               {online ? (
                 <>
-                  <Wifi className="w-3 h-3 text-green-500" />
+                  <Wifi className="w-3 h-3 text-green-500 flex-shrink-0" />
                   <span className="text-green-500 font-medium">Online</span>
                 </>
               ) : (
                 <>
-                  <WifiOff className="w-3 h-3 text-red-500" />
+                  <WifiOff className="w-3 h-3 text-red-500 flex-shrink-0" />
                   <span className="text-red-500 font-medium">Offline</span>
                 </>
               )}
               {messageCount > 0 && (
                 <>
                   <span className="text-muted-foreground mx-1">•</span>
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground whitespace-nowrap">
                     {messageCount} {messageCount === 1 ? "mensagem" : "mensagens"}
                   </span>
                 </>
@@ -44,7 +49,9 @@ export const ChatHeader = ({ online, onClearChat, messageCount = 0 }: ChatHeader
 
         {/* Botão de limpar */}
         {onClearChat && messageCount > 0 && (
-          <ClearChatButton onClear={onClearChat} disabled={!online} />
+          <div className="flex-shrink-0 ml-2">
+            <ClearChatButton onClear={onClearChat} disabled={!online} />
+          </div>
         )}
       </div>
     </header>

@@ -129,3 +129,61 @@
 .typing-dot:nth-child(3) {
   animation-delay: 0.4s;
 }
+
+/* ===== SCROLLBAR CUSTOMIZADA PARA SIDEBAR ===== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--sidebar-border));
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--sidebar-primary) / 0.5);
+}
+
+/* Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--sidebar-border)) transparent;
+}
+
+/* ===== BARRA LATERAL ESQUERDA DA SIDEBAR ===== */
+.sidebar-left-border {
+  position: relative;
+}
+
+.sidebar-left-border::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--sidebar-primary)),
+    hsl(var(--sidebar-accent)),
+    hsl(var(--sidebar-primary))
+  );
+  box-shadow: 0 0 20px hsl(var(--sidebar-primary) / 0.5);
+  animation: pulse-border 3s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    opacity: 0.6;
+    box-shadow: 0 0 20px hsl(var(--sidebar-primary) / 0.3);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 30px hsl(var(--sidebar-primary) / 0.6);
+  }
+}
