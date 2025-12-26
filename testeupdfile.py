@@ -127,24 +127,11 @@ def upload_file():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    """Rota de chat sem arquivo anexado - Aceita JSON e FormData"""
+    """Rota de chat sem arquivo anexado"""
     try:
-        # Aceitar tanto JSON quanto FormData
-        if request.is_json:
-            data = request.json
-            logger.info(f"[OK] Requisicao JSON recebida: {data}")
-        elif request.form:
-            data = request.form.to_dict()
-            logger.info(f"[OK] Requisicao FormData recebida: {data}")
-        else:
-            logger.warning(f"[WARN] Formato nao suportado: {request.content_type}")
-            return jsonify({
-                "erro": "Envie dados em JSON ou FormData",
-                "content_type": request.content_type,
-                "exemplo_json": {"pergunta": "sua pergunta aqui"},
-                "dica": "Adicione header 'Content-Type: application/json' ou use FormData"
-            }), 415
+        logger.info(f"[OK] Requisicao de chat recebida: {request.json}")
         
+        data = request.json
         pergunta = data.get("pergunta")
         
         logger.info(f"[IN] Pergunta recebida: {pergunta}")
@@ -166,8 +153,7 @@ Resposta:"""
             mimetype='text/event-stream',
             headers={
                 'Cache-Control': 'no-cache',
-                'X-Accel-Buffering': 'no',
-                'Connection': 'keep-alive'
+                'X-Accel-Buffering': 'no'
             }
         )
     
@@ -179,20 +165,7 @@ Resposta:"""
 def chat_with_file():
     """Rota de chat com arquivo anexado"""
     try:
-        # Aceitar tanto JSON quanto FormData
-        if request.is_json:
-            data = request.json
-            logger.info(f"[OK] Requisicao JSON com arquivo recebida")
-        elif request.form:
-            data = request.form.to_dict()
-            logger.info(f"[OK] Requisicao FormData com arquivo recebida")
-        else:
-            logger.warning(f"[WARN] Formato nao suportado: {request.content_type}")
-            return jsonify({
-                "erro": "Envie dados em JSON ou FormData",
-                "content_type": request.content_type
-            }), 415
-        
+        data = request.json
         pergunta = data.get("pergunta")
         file_content = data.get("file_content", "")
         
@@ -227,8 +200,7 @@ Resposta:"""
             mimetype='text/event-stream',
             headers={
                 'Cache-Control': 'no-cache',
-                'X-Accel-Buffering': 'no',
-                'Connection': 'keep-alive'
+                'X-Accel-Buffering': 'no'
             }
         )
     
@@ -331,37 +303,6 @@ def list_files():
         logger.error(f"[ERROR] Erro ao listar arquivos: {str(e)}", exc_info=True)
         return jsonify({"erro": str(e)}), 500
 
-# ===== ROTA DE TESTE DE CONECTIVIDADE COM OLLAMA =====
-@app.route("/test-ollama", methods=["GET"])
-def test_ollama():
-    """Testa conexão com Ollama"""
-    try:
-        response = requests.get("http://localhost:11434/api/tags", timeout=5)
-        if response.status_code == 200:
-            models = response.json().get("models", [])
-            logger.info(f"[OLLAMA] Conectado! Modelos disponiveis: {len(models)}")
-            return jsonify({
-                "status": "online",
-                "models": [m.get("name") for m in models]
-            })
-        else:
-            return jsonify({
-                "status": "error",
-                "message": f"Ollama retornou status {response.status_code}"
-            }), 500
-    except requests.exceptions.ConnectionError:
-        logger.error("[OLLAMA] Nao foi possivel conectar")
-        return jsonify({
-            "status": "offline",
-            "message": "Ollama nao esta rodando. Execute: ollama serve"
-        }), 503
-    except Exception as e:
-        logger.error(f"[ERROR] Erro ao testar Ollama: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
-
 # ===== INICIAR SERVIDOR =====
 if __name__ == "__main__":
     logger.info("=" * 60)
@@ -371,19 +312,6 @@ if __name__ == "__main__":
     logger.info(f"[CONFIG] Pasta de uploads: {UPLOAD_FOLDER}")
     logger.info(f"[CONFIG] Tamanho maximo: {MAX_FILE_SIZE / (1024*1024):.0f}MB")
     logger.info(f"[CONFIG] Extensoes permitidas: {', '.join(ALLOWED_EXTENSIONS)}")
-    logger.info("=" * 60)
-    
-    # Testar conexão com Ollama ao iniciar
-    try:
-        response = requests.get("http://localhost:11434/api/tags", timeout=3)
-        if response.status_code == 200:
-            models = response.json().get("models", [])
-            logger.info(f"[OLLAMA] ✓ Conectado! {len(models)} modelo(s) disponivel(is)")
-        else:
-            logger.warning("[OLLAMA] ⚠ Ollama respondeu mas com erro")
-    except:
-        logger.warning("[OLLAMA] ⚠ Nao foi possivel conectar. Certifique-se de executar 'ollama serve'")
-    
     logger.info("=" * 60)
     
     app.run(debug=True, port=5000, threaded=True)
