@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Trash2, Edit2, Check, X, Plus } from "lucide-react";
+import { Trash2, Edit2, Check, X, Plus, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Conversation {
@@ -16,6 +16,9 @@ interface SidebarProps {
   onNewConversation: () => void;
   onDeleteConversation: (id: number) => void;
   onRenameConversation: (id: number, newTitle: string) => void;
+  onOpenSettings: () => void;
+  username?: string;
+  userAvatar?: string;
   loading: boolean;
   isOpen: boolean;
   onClose: () => void;
@@ -28,6 +31,9 @@ export const Sidebar = ({
   onNewConversation,
   onDeleteConversation,
   onRenameConversation,
+  onOpenSettings,
+  username = "Usuário",
+  userAvatar,
   loading,
   isOpen,
   onClose,
@@ -35,24 +41,18 @@ export const Sidebar = ({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
-  // 🐛 DEBUG
+  // DEBUG
   useEffect(() => {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log(" SIDEBAR RENDERIZADO");
-    console.log(" Conversas recebidas:", conversations);
-    console.log(" Quantidade:", conversations?.length || 0);
-    console.log(" isOpen:", isOpen);
-    console.log(" loading:", loading);
+    console.log("📂 SIDEBAR RENDERIZADO");
+    console.log("📊 Conversas:", conversations?.length ?? 0);
+    console.log("📊 isOpen:", isOpen, " loading:", loading);
+    console.log("📊 username:", username);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  }, [conversations, isOpen, loading]);
+  }, [conversations, isOpen, loading, username]);
 
   const groupConversationsByDate = () => {
-    console.log(" Agrupando conversas...");
-
-    if (!conversations || conversations.length === 0) {
-      console.log(" Nenhuma conversa para agrupar");
-      return [];
-    }
+    if (!conversations || conversations.length === 0) return [];
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -63,9 +63,7 @@ export const Sidebar = ({
     const lastMonth = new Date(today);
     lastMonth.setMonth(lastMonth.getMonth() - 1);
 
-    const groups: {
-      [key: string]: Conversation[];
-    } = {
+    const groups: Record<string, Conversation[]> = {
       Hoje: [],
       Ontem: [],
       "Últimos 7 dias": [],
@@ -73,9 +71,7 @@ export const Sidebar = ({
       Anteriores: [],
     };
 
-    conversations.forEach((conv, index) => {
-      console.log(` Processando conversa ${index + 1}:`, conv.title);
-
+    conversations.forEach((conv) => {
       const convDate = new Date(conv.updated_at);
       const convDateOnly = new Date(
         convDate.getFullYear(),
@@ -84,26 +80,19 @@ export const Sidebar = ({
       );
 
       if (convDateOnly.getTime() === today.getTime()) {
-        groups["Hoje"].push(conv);
+        groups.Hoje.push(conv);
       } else if (convDateOnly.getTime() === yesterday.getTime()) {
-        groups["Ontem"].push(conv);
+        groups.Ontem.push(conv);
       } else if (convDate >= lastWeek) {
         groups["Últimos 7 dias"].push(conv);
       } else if (convDate >= lastMonth) {
         groups["Últimos 30 dias"].push(conv);
       } else {
-        groups["Anteriores"].push(conv);
+        groups.Anteriores.push(conv);
       }
     });
 
-    const result = Object.entries(groups).filter(([_, convs]) => convs.length > 0);
-
-    console.log(" Grupos criados:");
-    result.forEach(([name, convs]) => {
-      console.log(`  - ${name}: ${convs.length} conversa(s)`);
-    });
-
-    return result;
+    return Object.entries(groups).filter(([_, list]) => list.length > 0);
   };
 
   const handleStartEdit = (id: number, currentTitle: string) => {
@@ -112,7 +101,7 @@ export const Sidebar = ({
   };
 
   const handleSaveEdit = () => {
-    if (editingId && editTitle.trim()) {
+    if (editingId !== null && editTitle.trim()) {
       onRenameConversation(editingId, editTitle.trim());
       setEditingId(null);
       setEditTitle("");
@@ -131,8 +120,6 @@ export const Sidebar = ({
   };
 
   const groupedConversations = groupConversationsByDate();
-
-  console.log(" Renderizando Sidebar com", groupedConversations.length, "grupos");
 
   return (
     <>
@@ -155,7 +142,7 @@ export const Sidebar = ({
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Header - Botão New Chat */}
+        {/* Header - New Chat */}
         <div className="p-3 border-b border-sidebar-border">
           <button
             onClick={onNewConversation}
@@ -175,7 +162,7 @@ export const Sidebar = ({
           </button>
         </div>
 
-        {/* Lista de conversas com scroll */}
+        {/* Lista de conversas */}
         <div className="flex-1 overflow-y-auto px-2 py-2 custom-scrollbar">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
@@ -184,13 +171,10 @@ export const Sidebar = ({
             </div>
           ) : groupedConversations.length === 0 ? (
             <div className="text-center py-8 px-4">
-              <p className="text-sm text-muted-foreground">
-                Nenhuma conversa ainda
-              </p>
+              <p className="text-sm text-muted-foreground">Nenhuma conversa ainda</p>
               <p className="text-xs text-muted-foreground/70 mt-1">
                 Clique em "New Chat" para começar
               </p>
-              {/* 🐛 DEBUG */}
               <div className="mt-4 text-[10px] text-left bg-muted/50 p-2 rounded font-mono">
                 <div>Total: {conversations?.length || 0}</div>
                 <div>Loading: {loading ? "Sim" : "Não"}</div>
@@ -200,14 +184,12 @@ export const Sidebar = ({
           ) : (
             groupedConversations.map(([groupName, convs]) => (
               <div key={groupName} className="mb-4">
-                {/* Título do grupo */}
                 <div className="px-3 py-2">
                   <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     {groupName} ({convs.length})
                   </h3>
                 </div>
 
-                {/* Conversas do grupo */}
                 <div className="space-y-1">
                   {convs.map((conv) => (
                     <div
@@ -220,7 +202,6 @@ export const Sidebar = ({
                       )}
                     >
                       {editingId === conv.id ? (
-                        // Modo de edição
                         <div className="flex items-center gap-2 px-3 py-2">
                           <input
                             type="text"
@@ -247,7 +228,6 @@ export const Sidebar = ({
                           </button>
                         </div>
                       ) : (
-                        // Modo normal
                         <div className="flex items-center">
                           <button
                             onClick={() => onSelectConversation(conv.id)}
@@ -259,7 +239,6 @@ export const Sidebar = ({
                             </span>
                           </button>
 
-                          {/* Menu de ações */}
                           <div
                             className={cn(
                               "flex items-center gap-1 pr-2",
@@ -267,9 +246,7 @@ export const Sidebar = ({
                             )}
                           >
                             <button
-                              onClick={() =>
-                                handleStartEdit(conv.id, conv.title)
-                              }
+                              onClick={() => handleStartEdit(conv.id, conv.title)}
                               className="p-1.5 hover:bg-background rounded transition-colors"
                               title="Renomear"
                             >
@@ -295,23 +272,34 @@ export const Sidebar = ({
 
         {/* Footer */}
         <div className="border-t border-sidebar-border p-3 space-y-2">
-          <button className="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-accent text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-between group">
-            <span>Configurações</span>
+          <button
+            onClick={onOpenSettings}
+            className="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-accent text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all duration-200 flex items-center justify-between group active:scale-[0.98]"
+          >
+            <div className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              <span>Configurações</span>
+            </div>
             <span className="bg-primary/90 text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-bold group-hover:scale-110 transition-transform">
-            🛠️
+              ⚙️
             </span>
           </button>
 
           <div className="px-4 py-2.5 rounded-lg hover:bg-sidebar-accent transition-colors flex items-center gap-3 cursor-pointer">
-            <span className="text-base">👤</span>
-            <span className="text-sm text-sidebar-foreground truncate">
-              Usuário
-            </span>
+            {userAvatar ? (
+              <img
+                src={userAvatar}
+                alt={username}
+                className="w-6 h-6 rounded-full object-cover border border-sidebar-border"
+              />
+            ) : (
+              <span className="text-base">👤</span>
+            )}
+            <span className="text-sm text-sidebar-foreground truncate">{username}</span>
           </div>
         </div>
       </aside>
 
-      {/* CSS customizado */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
