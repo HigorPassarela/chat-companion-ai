@@ -5,6 +5,12 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import requests
 import json
+from supabase import create_client, Client
+from dotenv import load_dotenv
+from datetime import datetime
+
+# Carregar variáveis de ambiente
+load_dotenv()
 
 # ===== CONFIGURAÇÃO DE LOGS =====
 logging.basicConfig(
@@ -19,14 +25,35 @@ logger = logging.getLogger(__name__)
 
 # ===== CONFIGURAÇÃO DO FLASK =====
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:8080", "http://localhost:5173", "http://127.0.0.1:8080"],
+        "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
+
+# ===== CONFIGURAÇÃO DO SUPABASE =====
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    logger.warning("[WARN] Credenciais do Supabase não encontradas no .env")
+    supabase: Client = None
+else:
+    try:
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        logger.info("[OK] Conectado ao Supabase")
+    except Exception as e:
+        logger.error(f"[ERROR] Erro ao conectar no Supabase: {e}")
+        supabase = None
 
 # ===== CONFIGURAÇÃO DE UPLOAD =====
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'csv', 'json', 'py', 'js', 'html', 'css'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
-# Criar pasta de uploads se não existir
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
     logger.info(f"[OK] Pasta de uploads criada: {UPLOAD_FOLDER}")
@@ -47,7 +74,6 @@ def ler_arquivo(filepath):
         with open(filepath, 'r', encoding='utf-8') as f:
             return f.read()
     except UnicodeDecodeError:
-        # Tentar com outra codificação
         try:
             with open(filepath, 'r', encoding='latin-1') as f:
                 return f.read()
@@ -58,7 +84,134 @@ def ler_arquivo(filepath):
         logger.warning(f"[WARN] Erro ao ler arquivo: {str(e)}")
         return None
 
-# ===== ROTAS DA API =====
+# ===== ROTAS DE CONVERSAS (SUPABASE) =====
+
+@app.route("/api/conversations", methods=["GET"])
+def get_conversations():
+    """Lista todas as conversas"""
+    try:
+        if not supabase:
+            logger.error("[ERROR] Supabase não configurado")
+            return jsonify({"error": "Supabase não configurado"}), 500
+        
+        logger.info("[API] Buscando conversas...")
+        
+        response = supabase.table("conversations").select("*").order("updated_at", desc=True).execute()
+        
+        conversations = response.data if response.data else []
+        
+        logger.info(f"[API] Retornando {len(conversations)} conversas")
+        return jsonify(conversations)
+    
+    except Exception as e:
+        logger.error(f"[ERROR] Erro ao buscar conversas: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/conversations", methods=["POST"])
+def create_conversation():
+    """Cria uma nova conversa"""
+    try:
+        if not supabase:
+            return jsonify({"error": "Supabase não configurado"}), 500
+        
+        data = request.get_json()
+        title = data.get("title", "Nova conversa")
+        
+        logger.info(f"[API] Criando nova conversa: {title}")
+        
+        response = supabase.table("conversations").insert({
+            "title": title,
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat()
+        }).execute()
+        
+        if response.data:
+            conversation = response.data[0]
+            logger.info(f"[API] Conversa criada: ID={conversation['id']}")
+            return jsonify(conversation), 201
+        else:
+            logger.error("[ERROR] Falha ao criar conversa")
+            return jsonify({"error": "Falha ao criar conversa"}), 500
+    
+    except Exception as e:
+        logger.error(f"[ERROR] Erro ao criar conversa: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/conversations/<int:conversation_id>", methods=["GET"])
+def get_conversation(conversation_id):
+    """Busca uma conversa específica"""
+    try:
+        if not supabase:
+            return jsonify({"error": "Supabase não configurado"}), 500
+        
+        logger.info(f"[API] Buscando conversa ID={conversation_id}")
+        
+        response = supabase.table("conversations").select("*").eq("id", conversation_id).execute()
+        
+        if response.data and len(response.data) > 0:
+            return jsonify(response.data[0])
+        else:
+            return jsonify({"error": "Conversa não encontrada"}), 404
+    
+    except Exception as e:
+        logger.error(f"[ERROR] Erro ao buscar conversa: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/conversations/<int:conversation_id>", methods=["PATCH"])
+def update_conversation(conversation_id):
+    """Atualiza o título de uma conversa"""
+    try:
+        if not supabase:
+            return jsonify({"error": "Supabase não configurado"}), 500
+        
+        data = request.get_json()
+        title = data.get("title")
+        
+        if not title:
+            return jsonify({"error": "Título é obrigatório"}), 400
+        
+        logger.info(f"[API] Atualizando conversa ID={conversation_id}: {title}")
+        
+        response = supabase.table("conversations").update({
+            "title": title,
+            "updated_at": datetime.utcnow().isoformat()
+        }).eq("id", conversation_id).execute()
+        
+        if response.data and len(response.data) > 0:
+            logger.info(f"[API] Conversa {conversation_id} atualizada")
+            return jsonify(response.data[0])
+        else:
+            return jsonify({"error": "Conversa não encontrada"}), 404
+    
+    except Exception as e:
+        logger.error(f"[ERROR] Erro ao atualizar conversa: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/conversations/<int:conversation_id>", methods=["DELETE"])
+def delete_conversation(conversation_id):
+    """Deleta uma conversa"""
+    try:
+        if not supabase:
+            return jsonify({"error": "Supabase não configurado"}), 500
+        
+        logger.info(f"[API] Deletando conversa ID={conversation_id}")
+        
+        # Deletar mensagens da conversa primeiro (se houver)
+        try:
+            supabase.table("messages").delete().eq("conversation_id", conversation_id).execute()
+        except:
+            pass
+        
+        response = supabase.table("conversations").delete().eq("id", conversation_id).execute()
+        
+        logger.info(f"[API] Conversa {conversation_id} deletada")
+        return jsonify({"message": "Conversa deletada com sucesso"}), 200
+    
+    except Exception as e:
+        logger.error(f"[ERROR] Erro ao deletar conversa: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+# ===== ROTAS EXISTENTES =====
 
 @app.route("/ping", methods=["GET"])
 def ping():
@@ -76,26 +229,22 @@ def upload_file():
     try:
         logger.info("[UPLOAD] Requisicao de upload recebida")
         
-        # Verificar se há arquivo na requisição
         if 'file' not in request.files:
             logger.warning("[WARN] Nenhum arquivo enviado")
             return jsonify({"erro": "Nenhum arquivo enviado"}), 400
         
         file = request.files['file']
         
-        # Verificar se o nome do arquivo não está vazio
         if file.filename == '':
             logger.warning("[WARN] Nome de arquivo vazio")
             return jsonify({"erro": "Nome de arquivo vazio"}), 400
         
-        # Verificar extensão permitida
         if not allowed_file(file.filename):
             logger.warning(f"[WARN] Tipo de arquivo nao permitido: {file.filename}")
             return jsonify({
                 "erro": f"Tipo de arquivo nao permitido. Extensoes aceitas: {', '.join(ALLOWED_EXTENSIONS)}"
             }), 400
         
-        # Salvar arquivo com nome seguro
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
@@ -103,7 +252,6 @@ def upload_file():
         file_size = os.path.getsize(filepath)
         logger.info(f"[OK] Arquivo salvo: {filepath} ({file_size} bytes)")
         
-        # Tentar ler conteúdo (se for arquivo de texto)
         file_content = None
         extension = filename.rsplit('.', 1)[1].lower()
         
@@ -117,7 +265,7 @@ def upload_file():
             "filename": filename,
             "filepath": filepath,
             "size": file_size,
-            "content": file_content[:3000] if file_content else None,  # limitar a 3000 chars
+            "content": file_content[:3000] if file_content else None,
             "extension": extension
         })
     
@@ -127,40 +275,29 @@ def upload_file():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    """Rota de chat sem arquivo anexado - Aceita JSON e FormData"""
+    """Rota de chat sem arquivo anexado"""
     try:
-        # Aceitar tanto JSON quanto FormData
         if request.is_json:
             data = request.json
-            logger.info(f"[OK] Requisicao JSON recebida: {data}")
+            logger.info(f"[OK] Requisicao JSON recebida")
         elif request.form:
             data = request.form.to_dict()
-            logger.info(f"[OK] Requisicao FormData recebida: {data}")
+            logger.info(f"[OK] Requisicao FormData recebida")
         else:
-            logger.warning(f"[WARN] Formato nao suportado: {request.content_type}")
-            return jsonify({
-                "erro": "Envie dados em JSON ou FormData",
-                "content_type": request.content_type,
-                "exemplo_json": {"pergunta": "sua pergunta aqui"},
-                "dica": "Adicione header 'Content-Type: application/json' ou use FormData"
-            }), 415
+            return jsonify({"erro": "Formato não suportado"}), 415
         
         pergunta = data.get("pergunta")
-        
         logger.info(f"[IN] Pergunta recebida: {pergunta}")
         
         if not pergunta:
-            logger.warning("[WARN] Pergunta vazia recebida")
             return jsonify({"erro": "Pergunta nao pode estar vazia"}), 400
         
-        # Criar prompt simples
         prompt = f"""Voce e um assistente que sempre responde em portugues brasileiro de forma clara e educada.
 
 Pergunta: {pergunta}
 
 Resposta:"""
         
-        # Retornar streaming
         return Response(
             stream_with_context(chat_stream(prompt)),
             mimetype='text/event-stream',
@@ -172,48 +309,36 @@ Resposta:"""
         )
     
     except Exception as e:
-        logger.error(f"[ERROR] Erro ao processar requisicao: {str(e)}", exc_info=True)
+        logger.error(f"[ERROR] Erro: {str(e)}", exc_info=True)
         return jsonify({"erro": str(e)}), 500
 
 @app.route("/chat-with-file", methods=["POST"])
 def chat_with_file():
     """Rota de chat com arquivo anexado"""
     try:
-        # Aceitar tanto JSON quanto FormData
         if request.is_json:
             data = request.json
-            logger.info(f"[OK] Requisicao JSON com arquivo recebida")
         elif request.form:
             data = request.form.to_dict()
-            logger.info(f"[OK] Requisicao FormData com arquivo recebida")
         else:
-            logger.warning(f"[WARN] Formato nao suportado: {request.content_type}")
-            return jsonify({
-                "erro": "Envie dados em JSON ou FormData",
-                "content_type": request.content_type
-            }), 415
+            return jsonify({"erro": "Formato não suportado"}), 415
         
         pergunta = data.get("pergunta")
         file_content = data.get("file_content", "")
         
         logger.info(f"[IN] Pergunta com arquivo recebida: {pergunta}")
-        logger.info(f"[FILE] Tamanho do conteudo: {len(file_content)} caracteres")
         
         if not pergunta:
-            logger.warning("[WARN] Pergunta vazia recebida")
             return jsonify({"erro": "Pergunta nao pode estar vazia"}), 400
         
-        # Criar prompt com contexto do arquivo
         if file_content:
             prompt = f"""Voce e um assistente que sempre responde em portugues brasileiro.
 
-Aqui esta o conteudo de um arquivo que o usuario anexou:
+Aqui esta o conteudo de um arquivo:
 
 ---INICIO DO ARQUIVO---
 {file_content[:3000]}
 ---FIM DO ARQUIVO---
-
-Agora, baseado nesse conteudo, responda a seguinte pergunta:
 
 Pergunta: {pergunta}
 
@@ -221,7 +346,6 @@ Resposta:"""
         else:
             prompt = f"Responda em portugues: {pergunta}"
         
-        # Retornar streaming
         return Response(
             stream_with_context(chat_stream(prompt)),
             mimetype='text/event-stream',
@@ -233,16 +357,14 @@ Resposta:"""
         )
     
     except Exception as e:
-        logger.error(f"[ERROR] Erro ao processar requisicao com arquivo: {str(e)}", exc_info=True)
+        logger.error(f"[ERROR] Erro: {str(e)}", exc_info=True)
         return jsonify({"erro": str(e)}), 500
 
-# ===== FUNÇÃO DE STREAMING =====
 def chat_stream(prompt):
     """Gera stream de tokens do Ollama"""
     try:
-        logger.debug(f"[CALL] Enviando para Ollama: {prompt[:100]}...")
+        logger.debug(f"[CALL] Enviando para Ollama...")
         
-        # Chamar API do Ollama com streaming
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={
@@ -267,7 +389,6 @@ def chat_stream(prompt):
             yield f"data: {json.dumps({'error': error_msg})}\n\n"
             return
         
-        # Enviar cada token para o frontend
         resposta_completa = ""
         token_count = 0
         
@@ -276,43 +397,27 @@ def chat_stream(prompt):
                 try:
                     chunk = json.loads(line)
                     
-                    # Enviar token individual
                     if "response" in chunk and chunk["response"]:
                         token = chunk["response"]
                         resposta_completa += token
                         token_count += 1
                         yield f"data: {json.dumps({'token': token})}\n\n"
                     
-                    # Sinalizar fim da resposta
                     if chunk.get("done", False):
-                        logger.info(f"[OUT] Resposta completa enviada ({token_count} tokens, {len(resposta_completa)} caracteres)")
-                        logger.debug(f"[OUT] Preview: {resposta_completa[:200]}...")
+                        logger.info(f"[OUT] Resposta completa ({token_count} tokens)")
                         yield f"data: {json.dumps({'done': True})}\n\n"
                         break
                         
-                except json.JSONDecodeError as e:
-                    logger.warning(f"[WARN] Erro ao decodificar JSON: {e}")
+                except json.JSONDecodeError:
                     continue
     
-    except requests.exceptions.Timeout:
-        error_msg = "Tempo limite excedido ao processar resposta"
-        logger.error(f"[ERROR] {error_msg}")
-        yield f"data: {json.dumps({'error': error_msg})}\n\n"
-    
-    except requests.exceptions.ConnectionError:
-        error_msg = "Nao foi possivel conectar ao Ollama. Certifique-se de que esta rodando (ollama serve)"
-        logger.error(f"[ERROR] {error_msg}")
-        yield f"data: {json.dumps({'error': error_msg})}\n\n"
-    
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"[ERROR] Erro em chat_stream: {error_msg}", exc_info=True)
-        yield f"data: {json.dumps({'error': error_msg})}\n\n"
+        logger.error(f"[ERROR] Erro: {str(e)}", exc_info=True)
+        yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-# ===== ROTA DE LISTAGEM DE ARQUIVOS (OPCIONAL) =====
 @app.route("/files", methods=["GET"])
 def list_files():
-    """Lista todos os arquivos enviados"""
+    """Lista arquivos enviados"""
     try:
         files = []
         for filename in os.listdir(UPLOAD_FOLDER):
@@ -328,10 +433,9 @@ def list_files():
         return jsonify({"files": files})
     
     except Exception as e:
-        logger.error(f"[ERROR] Erro ao listar arquivos: {str(e)}", exc_info=True)
+        logger.error(f"[ERROR] Erro: {str(e)}", exc_info=True)
         return jsonify({"erro": str(e)}), 500
 
-# ===== ROTA DE TESTE DE CONECTIVIDADE COM OLLAMA =====
 @app.route("/test-ollama", methods=["GET"])
 def test_ollama():
     """Testa conexão com Ollama"""
@@ -339,28 +443,14 @@ def test_ollama():
         response = requests.get("http://localhost:11434/api/tags", timeout=5)
         if response.status_code == 200:
             models = response.json().get("models", [])
-            logger.info(f"[OLLAMA] Conectado! Modelos disponiveis: {len(models)}")
             return jsonify({
                 "status": "online",
                 "models": [m.get("name") for m in models]
             })
         else:
-            return jsonify({
-                "status": "error",
-                "message": f"Ollama retornou status {response.status_code}"
-            }), 500
-    except requests.exceptions.ConnectionError:
-        logger.error("[OLLAMA] Nao foi possivel conectar")
-        return jsonify({
-            "status": "offline",
-            "message": "Ollama nao esta rodando. Execute: ollama serve"
-        }), 503
-    except Exception as e:
-        logger.error(f"[ERROR] Erro ao testar Ollama: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+            return jsonify({"status": "error"}), 500
+    except:
+        return jsonify({"status": "offline"}), 503
 
 # ===== INICIAR SERVIDOR =====
 if __name__ == "__main__":
@@ -368,21 +458,16 @@ if __name__ == "__main__":
     logger.info("[START] Iniciando servidor Flask")
     logger.info(f"[CONFIG] Porta: 5000")
     logger.info(f"[CONFIG] Modelo: codellama:7b")
-    logger.info(f"[CONFIG] Pasta de uploads: {UPLOAD_FOLDER}")
-    logger.info(f"[CONFIG] Tamanho maximo: {MAX_FILE_SIZE / (1024*1024):.0f}MB")
-    logger.info(f"[CONFIG] Extensoes permitidas: {', '.join(ALLOWED_EXTENSIONS)}")
+    logger.info(f"[CONFIG] Supabase: {'Configurado' if supabase else 'Não configurado'}")
     logger.info("=" * 60)
     
-    # Testar conexão com Ollama ao iniciar
     try:
         response = requests.get("http://localhost:11434/api/tags", timeout=3)
         if response.status_code == 200:
             models = response.json().get("models", [])
-            logger.info(f"[OLLAMA] ✓ Conectado! {len(models)} modelo(s) disponivel(is)")
-        else:
-            logger.warning("[OLLAMA] ⚠ Ollama respondeu mas com erro")
+            logger.info(f"[OLLAMA] ✓ Conectado! {len(models)} modelo(s)")
     except:
-        logger.warning("[OLLAMA] ⚠ Nao foi possivel conectar. Certifique-se de executar 'ollama serve'")
+        logger.warning("[OLLAMA] ⚠ Não conectado")
     
     logger.info("=" * 60)
     

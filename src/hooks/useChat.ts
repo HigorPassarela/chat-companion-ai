@@ -1,160 +1,229 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import {
+  supabase,
+  saveMessage,
+  getMessages,
+  createConversation,
+  saveFile,
+  type Message as DBMessage,
+} from "@/lib/supabase";
 
 interface Message {
   id: string;
   content: string;
   role: "user" | "assistant";
-  imageUrl?: string; 
+  imageUrl?: string;
+  timestamp: number;
 }
 
-export const useChat = () => {
+export const useChat = (initialConversationId?: number) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<number | null>(
+    initialConversationId || null
+  );
 
-  const sendMessage = useCallback(async (content: string, imageFile?: File) => {
-    // Adicionar mensagem do usuário
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content,
-      role: "user",
-      imageUrl: imageFile ? URL.createObjectURL(imageFile) : undefined,
-    };
-    setMessages(prev => [...prev, userMessage]);
-    setIsTyping(true);
+  // 💾 Carregar mensagens do Supabase ao mudar conversa
+  useEffect(() => {
+    if (currentConversationId) {
+      loadMessages(currentConversationId);
+    } else {
+      setMessages([]); // Limpar se não houver conversa
+    }
+  }, [currentConversationId]); // 
 
+  const loadMessages = async (convId: number) => {
     try {
-      // Decidir qual endpoint usar
-      let endpoint = "http://localhost:5000/chat";
-      let requestBody: any = { pergunta: content };
-
-      // Se houver arquivo, usar endpoint diferente e incluir conteúdo
-      if (imageFile) {
-        endpoint = "http://localhost:5000/chat-with-file";
-        
-        // Ler conteúdo do arquivo (se for texto)
-        const fileContent = await readFileContent(imageFile);
-        if (fileContent) {
-          requestBody.file_content = fileContent;
-        }
-      }
-
-      // Fazer requisição com streaming
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json", // ⭐ IMPORTANTE!
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erro ${response.status}: ${response.statusText}`);
-      }
-
-      // Processar streaming (Server-Sent Events)
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      console.log(`[useChat] Carregando mensagens da conversa ${convId}`);
+      const data = await getMessages(convId);
       
-      let assistantMessage = "";
-      const assistantMessageId = (Date.now() + 1).toString();
+      const formattedMessages: Message[] = data.map((msg: any) => ({
+        id: msg.id!.toString(),
+        content: msg.content,
+        role: msg.role,
+        timestamp: msg.timestamp,
+        imageUrl: msg.files?.[0]?.file_url || undefined,
+      }));
+      
+      setMessages(formattedMessages);
+      console.log(`[useChat] ${formattedMessages.length} mensagens carregadas`);
+    } catch (error) {
+      console.error("[useChat] Erro ao carregar mensagens:", error);
+      setMessages([]); // Limpar em caso de erro
+    }
+  };
 
-      // Adicionar mensagem vazia do assistente
-      setMessages(prev => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          content: "",
-          role: "assistant",
-        },
-      ]);
+  const sendMessage = useCallback(
+    async (content: string, imageFile?: File) => {
+      try {
+        // Criar conversa se não existir
+        let convId = currentConversationId;
+        if (!convId) {
+          const conversation = await createConversation();
+          convId = conversation.id!;
+          setCurrentConversationId(convId);
+          console.log(`[useChat] Nova conversa criada: ${convId}`);
+        }
 
-      while (true) {
-        const { done, value } = await reader!.read();
-        if (done) break;
+        const timestamp = Date.now();
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
+        // Adicionar mensagem do usuário na UI
+        const userMessage: Message = {
+          id: timestamp.toString(),
+          content,
+          role: "user",
+          imageUrl: imageFile ? URL.createObjectURL(imageFile) : undefined,
+          timestamp,
+        };
+        setMessages((prev) => [...prev, userMessage]);
+        setIsTyping(true);
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6));
+        // Salvar mensagem do usuário no Supabase
+        const savedUserMessage = await saveMessage({
+          conversation_id: convId,
+          role: "user",
+          content,
+          timestamp,
+        });
 
-              // Receber token individual
-              if (data.token) {
-                assistantMessage += data.token;
-                
-                // Atualizar mensagem em tempo real
-                setMessages(prev => {
-                  const newMessages = [...prev];
-                  const lastMsg = newMessages.find(m => m.id === assistantMessageId);
-                  if (lastMsg) {
-                    lastMsg.content = assistantMessage;
-                  }
-                  return newMessages;
-                });
+        // Salvar arquivo se houver
+        let fileContent = null;
+        if (imageFile && savedUserMessage.id) {
+          await saveFile(savedUserMessage.id, imageFile);
+          
+          // Ler conteúdo se for texto
+          const textExtensions = ['txt', 'csv', 'json', 'py', 'js', 'jsx', 'ts', 'tsx', 'html', 'css'];
+          const extension = imageFile.name.split('.').pop()?.toLowerCase();
+          if (extension && textExtensions.includes(extension)) {
+            fileContent = await imageFile.text();
+          }
+        }
+
+        // Chamar backend Python para gerar resposta
+        const endpoint = fileContent
+          ? "http://localhost:5000/chat-with-file"
+          : "http://localhost:5000/chat";
+
+        const requestBody = fileContent
+          ? { pergunta: content, file_content: fileContent }
+          : { pergunta: content };
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erro ${response.status}: ${response.statusText}`);
+        }
+
+        // Processar streaming
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        let assistantMessage = "";
+        const assistantMessageId = (timestamp + 1).toString();
+
+        // Adicionar mensagem vazia do assistente
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: assistantMessageId,
+            content: "",
+            role: "assistant",
+            timestamp: timestamp + 1,
+          },
+        ]);
+
+        while (true) {
+          const { done, value } = await reader!.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+
+                if (data.token) {
+                  assistantMessage += data.token;
+
+                  // Atualizar UI em tempo real
+                  setMessages((prev) => {
+                    const newMessages = [...prev];
+                    const lastMsg = newMessages.find((m) => m.id === assistantMessageId);
+                    if (lastMsg) {
+                      lastMsg.content = assistantMessage;
+                    }
+                    return newMessages;
+                  });
+                }
+
+                if (data.done) {
+                  // Salvar resposta completa no Supabase
+                  await saveMessage({
+                    conversation_id: convId!,
+                    role: "assistant",
+                    content: assistantMessage,
+                    timestamp: timestamp + 1,
+                  });
+                  setIsTyping(false);
+                  console.log("[useChat] Resposta salva no Supabase");
+                }
+
+                if (data.error) {
+                  console.error("[useChat] Erro do servidor:", data.error);
+                  setMessages((prev) => {
+                    const newMessages = [...prev];
+                    const lastMsg = newMessages.find((m) => m.id === assistantMessageId);
+                    if (lastMsg) {
+                      lastMsg.content = ` Erro: ${data.error}`;
+                    }
+                    return newMessages;
+                  });
+                  setIsTyping(false);
+                  break;
+                }
+              } catch (e) {
+                console.debug("[useChat] Linha ignorada:", line);
               }
-
-              // Verificar se terminou
-              if (data.done) {
-                setIsTyping(false);
-              }
-
-              // Tratar erros
-              if (data.error) {
-                console.error("[useChat] Erro do servidor:", data.error);
-                setMessages(prev => {
-                  const newMessages = [...prev];
-                  const lastMsg = newMessages.find(m => m.id === assistantMessageId);
-                  if (lastMsg) {
-                    lastMsg.content = `❌ Erro: ${data.error}`;
-                  }
-                  return newMessages;
-                });
-                setIsTyping(false);
-                break;
-              }
-            } catch (e) {
-              // Ignorar linhas que não são JSON válido
-              console.debug("[useChat] Linha ignorada:", line);
             }
           }
         }
+      } catch (error) {
+        console.error("[useChat] Erro:", error);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            content: ` Erro ao conectar: ${
+              error instanceof Error ? error.message : "Erro desconhecido"
+            }`,
+            role: "assistant",
+            timestamp: Date.now(),
+          },
+        ]);
+        setIsTyping(false);
       }
-    } catch (error) {
-      console.error("[useChat] Erro:", error);
-      setMessages(prev => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          content: `❌ Erro ao conectar com o servidor: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-          role: "assistant",
-        },
-      ]);
-      setIsTyping(false);
-    }
+    },
+    [currentConversationId]
+  );
+
+  const clearHistory = useCallback(async () => {
+    setMessages([]);
+    setCurrentConversationId(null);
+    console.log("[useChat] Histórico local limpo");
   }, []);
 
-  return { messages, isTyping, sendMessage };
+  return {
+    messages,
+    isTyping,
+    sendMessage,
+    clearHistory,
+    currentConversationId,
+    setCurrentConversationId,
+  };
 };
-
-// Função auxiliar para ler conteúdo de arquivo
-async function readFileContent(file: File): Promise<string | null> {
-  // Verificar se é arquivo de texto
-  const textExtensions = ['txt', 'csv', 'json', 'py', 'js', 'html', 'css', 'tsx', 'ts', 'jsx'];
-  const extension = file.name.split('.').pop()?.toLowerCase();
-  
-  if (!extension || !textExtensions.includes(extension)) {
-    console.log("[readFileContent] Arquivo não é de texto:", file.name);
-    return null;
-  }
-
-  try {
-    const text = await file.text();
-    console.log(`[readFileContent] Lido ${text.length} caracteres de ${file.name}`);
-    return text;
-  } catch (error) {
-    console.error("[readFileContent] Erro ao ler arquivo:", error);
-    return null;
-  }
-}
