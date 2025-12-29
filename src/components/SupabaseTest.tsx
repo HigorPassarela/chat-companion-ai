@@ -11,12 +11,12 @@ export const SupabaseTest = () => {
   }, []);
 
   if (status === 'testing') {
-    return <div className="text-yellow-500">🔄 Testando conexão com Supabase...</div>;
+    return <div className="text-yellow-500">Testando conexão com Supabase...</div>;
   }
 
   if (status === 'success') {
-    return <div className="text-green-500">✅ Supabase conectado!</div>;
+    return <div className="text-green-500">Supabase conectado!</div>;
   }
 
-  return <div className="text-red-500">❌ Erro ao conectar com Supabase</div>;
+  return <div className="text-red-500">Erro ao conectar com Supabase</div>;
 };

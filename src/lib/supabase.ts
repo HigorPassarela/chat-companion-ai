@@ -9,7 +9,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// ===== TIPOS =====
+// ===== TIPOS CORRIGIDOS =====
 
 export interface Message {
   id?: number;
@@ -21,12 +21,21 @@ export interface Message {
   files?: FileAttachment[];
 }
 
+// ✅ TIPO CORRIGIDO - ID obrigatório para dados vindos do banco
 export interface Conversation {
+  id: number;           // ✅ OBRIGATÓRIO (sem ?)
+  title: string;
+  created_at: string;   // ✅ OBRIGATÓRIO
+  updated_at: string;   // ✅ OBRIGATÓRIO
+  message_count?: number;
+}
+
+// ✅ TIPO para inserção (ID opcional)
+export interface ConversationInput {
   id?: number;
   title: string;
   created_at?: string;
   updated_at?: string;
-  message_count?: number;
 }
 
 export interface FileAttachment {
@@ -40,16 +49,18 @@ export interface FileAttachment {
   created_at?: string;
 }
 
-// ===== FUNÇÕES CRUD =====
+// ===== FUNÇÕES CRUD CORRIGIDAS =====
 
 /**
  * Criar nova conversa
  */
 export async function createConversation(title = 'Nova Conversa'): Promise<Conversation> {
+  console.log('[Supabase] 🆕 Criando conversa:', title);
+  
   const { data, error } = await supabase
     .from('conversations')
     .insert({ title })
-    .select()
+    .select('id, title, created_at, updated_at')
     .single();
   
   if (error) {
@@ -57,35 +68,63 @@ export async function createConversation(title = 'Nova Conversa'): Promise<Conve
     throw error;
   }
   
+  if (!data || !data.id) {
+    throw new Error('Conversa criada mas sem ID retornado');
+  }
+  
   console.log('[Supabase] Conversa criada:', data.id);
-  return data;
+  return data as Conversation;
 }
 
 /**
  * Listar todas as conversas
  */
 export async function listConversations(): Promise<Conversation[]> {
-  const { data, error } = await supabase
-    .from('conversations')
-    .select(`
-      *,
-      messages(count)
-    `)
-    .order('updated_at', { ascending: false });
+  console.log('[Supabase] 📋 Listando conversas...');
   
-  if (error) {
-    console.error('[Supabase] Erro ao listar conversas:', error);
+  try {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('id, title, created_at, updated_at')
+      .order('updated_at', { ascending: false });
+    
+    console.log('[Supabase] 📊 Query executada');
+    console.log('[Supabase] 📊 Erro:', error);
+    console.log('[Supabase] 📊 Dados brutos:', data);
+    
+    if (error) {
+      console.error('[Supabase] Erro ao listar conversas:', error);
+      throw error;
+    }
+    
+    if (!data) {
+      console.log('[Supabase] ⚠️ Nenhum dado retornado');
+      return [];
+    }
+    
+    // ✅ Filtra apenas conversas com ID válido
+    const validConversations = data.filter((conv): conv is Conversation => {
+      const isValid = conv && 
+                     typeof conv.id === 'number' && 
+                     conv.id > 0 && 
+                     typeof conv.title === 'string' &&
+                     conv.created_at &&
+                     conv.updated_at;
+      
+      if (!isValid) {
+        console.warn('[Supabase] ⚠️ Conversa inválida filtrada:', conv);
+      }
+      
+      return isValid;
+    });
+    
+    console.log(`[Supabase] ✅ ${validConversations.length} conversas válidas carregadas`);
+    return validConversations;
+    
+  } catch (error) {
+    console.error('[Supabase] ❌ Erro completo:', error);
     throw error;
   }
-  
-  // Formatar dados
-  const formatted = data.map(conv => ({
-    ...conv,
-    message_count: conv.messages[0]?.count || 0,
-  }));
-  
-  console.log(`[Supabase] ${formatted.length} conversas carregadas`);
-  return formatted;
 }
 
 /**
@@ -94,7 +133,7 @@ export async function listConversations(): Promise<Conversation[]> {
 export async function getConversation(id: number): Promise<Conversation | null> {
   const { data, error } = await supabase
     .from('conversations')
-    .select('*')
+    .select('id, title, created_at, updated_at')
     .eq('id', id)
     .single();
   
@@ -103,7 +142,7 @@ export async function getConversation(id: number): Promise<Conversation | null> 
     return null;
   }
   
-  return data;
+  return data as Conversation;
 }
 
 /**
@@ -112,7 +151,10 @@ export async function getConversation(id: number): Promise<Conversation | null> 
 export async function updateConversationTitle(id: number, title: string): Promise<void> {
   const { error } = await supabase
     .from('conversations')
-    .update({ title })
+    .update({ 
+      title,
+      updated_at: new Date().toISOString()
+    })
     .eq('id', id);
   
   if (error) {
@@ -260,17 +302,22 @@ export async function getFilesByMessage(messageId: number): Promise<FileAttachme
  */
 export async function testConnection(): Promise<boolean> {
   try {
+    console.log('[Supabase] 🔍 Testando conexão...');
+    
     const { data, error } = await supabase
       .from('conversations')
       .select('count')
       .limit(1);
     
-    if (error) throw error;
+    if (error) {
+      console.error('[Supabase] ❌ Erro de conexão:', error);
+      return false;
+    }
     
-    console.log('[Supabase] [OK] Conexão OK');
+    console.log('[Supabase] ✅ Conexão OK');
     return true;
   } catch (error) {
-    console.error('[Supabase] [ERROR] Erro de conexão:', error);
+    console.error('[Supabase] ❌ Erro de conexão completo:', error);
     return false;
   }
 }

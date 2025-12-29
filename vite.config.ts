@@ -3,18 +3,23 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    // 👇 ADICIONE ESTA CONFIGURAÇÃO DE PROXY
     proxy: {
       "/api": {
-        target: "http://localhost:5000", // Backend Flask
+        target: "http://localhost:5000",
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path, // Mantém /api no caminho
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('Proxy Request:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('Proxy Response:', proxyRes.statusCode);
+          });
+        },
       },
     },
   },

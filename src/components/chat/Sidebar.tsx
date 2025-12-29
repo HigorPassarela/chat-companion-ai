@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Trash2, Edit2, Check, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,8 +35,25 @@ export const Sidebar = ({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
-  // Agrupar conversas por data
+  // 🐛 DEBUG
+  useEffect(() => {
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📂 SIDEBAR RENDERIZADO");
+    console.log("📊 Conversas recebidas:", conversations);
+    console.log("📊 Quantidade:", conversations?.length || 0);
+    console.log("📊 isOpen:", isOpen);
+    console.log("📊 loading:", loading);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  }, [conversations, isOpen, loading]);
+
   const groupConversationsByDate = () => {
+    console.log("📅 Agrupando conversas...");
+
+    if (!conversations || conversations.length === 0) {
+      console.log("⚠️ Nenhuma conversa para agrupar");
+      return [];
+    }
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today);
@@ -56,7 +73,9 @@ export const Sidebar = ({
       Anteriores: [],
     };
 
-    conversations.forEach((conv) => {
+    conversations.forEach((conv, index) => {
+      console.log(`📅 Processando conversa ${index + 1}:`, conv.title);
+
       const convDate = new Date(conv.updated_at);
       const convDateOnly = new Date(
         convDate.getFullYear(),
@@ -77,8 +96,14 @@ export const Sidebar = ({
       }
     });
 
-    // Remover grupos vazios
-    return Object.entries(groups).filter(([_, convs]) => convs.length > 0);
+    const result = Object.entries(groups).filter(([_, convs]) => convs.length > 0);
+
+    console.log("📅 Grupos criados:");
+    result.forEach(([name, convs]) => {
+      console.log(`  - ${name}: ${convs.length} conversa(s)`);
+    });
+
+    return result;
   };
 
   const handleStartEdit = (id: number, currentTitle: string) => {
@@ -107,6 +132,8 @@ export const Sidebar = ({
 
   const groupedConversations = groupConversationsByDate();
 
+  console.log("🎨 Renderizando Sidebar com", groupedConversations.length, "grupos");
+
   return (
     <>
       {/* Overlay para mobile */}
@@ -121,12 +148,10 @@ export const Sidebar = ({
       {/* Sidebar */}
       <aside
         className={cn(
-          // 👇 CORREÇÃO: Remover lg:static para permitir esconder em todas as telas
           "fixed inset-y-0 left-0 z-50",
           "w-[260px] bg-sidebar border-r border-sidebar-border",
           "flex flex-col",
           "transition-transform duration-300 ease-in-out",
-          // 👇 CORREÇÃO: Aplicar translate em todas as telas
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -153,8 +178,9 @@ export const Sidebar = ({
         {/* Lista de conversas com scroll */}
         <div className="flex-1 overflow-y-auto px-2 py-2 custom-scrollbar">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
+              <span className="text-sm text-muted-foreground">Carregando...</span>
             </div>
           ) : groupedConversations.length === 0 ? (
             <div className="text-center py-8 px-4">
@@ -164,6 +190,12 @@ export const Sidebar = ({
               <p className="text-xs text-muted-foreground/70 mt-1">
                 Clique em "New Chat" para começar
               </p>
+              {/* 🐛 DEBUG */}
+              <div className="mt-4 text-[10px] text-left bg-muted/50 p-2 rounded font-mono">
+                <div>Total: {conversations?.length || 0}</div>
+                <div>Loading: {loading ? "Sim" : "Não"}</div>
+                <div>isOpen: {isOpen ? "Sim" : "Não"}</div>
+              </div>
             </div>
           ) : (
             groupedConversations.map(([groupName, convs]) => (
@@ -171,7 +203,7 @@ export const Sidebar = ({
                 {/* Título do grupo */}
                 <div className="px-3 py-2">
                   <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {groupName}
+                    {groupName} ({convs.length})
                   </h3>
                 </div>
 
@@ -227,7 +259,7 @@ export const Sidebar = ({
                             </span>
                           </button>
 
-                          {/* Menu de ações (aparece no hover) */}
+                          {/* Menu de ações */}
                           <div
                             className={cn(
                               "flex items-center gap-1 pr-2",
@@ -263,15 +295,13 @@ export const Sidebar = ({
 
         {/* Footer */}
         <div className="border-t border-sidebar-border p-3 space-y-2">
-          {/* Botão Upgrade */}
           <button className="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-accent text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-between group">
-            <span>Upgrade to Plus</span>
+            <span>Configurações</span>
             <span className="bg-primary/90 text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-bold group-hover:scale-110 transition-transform">
-              NEW
+            🛠️
             </span>
           </button>
 
-          {/* User info */}
           <div className="px-4 py-2.5 rounded-lg hover:bg-sidebar-accent transition-colors flex items-center gap-3 cursor-pointer">
             <span className="text-base">👤</span>
             <span className="text-sm text-sidebar-foreground truncate">
@@ -280,6 +310,23 @@ export const Sidebar = ({
           </div>
         </div>
       </aside>
+
+      {/* CSS customizado */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: hsl(var(--sidebar-border));
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: hsl(var(--sidebar-accent));
+        }
+      `}</style>
     </>
   );
 };

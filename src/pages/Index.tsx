@@ -8,11 +8,10 @@ import { SidebarToggle } from "@/components/chat/SidebarToggle";
 import { useChat } from "@/hooks/useChat";
 import { useConversations } from "@/hooks/useConversations";
 import { useBackendStatus } from "@/hooks/useBackendStatus";
-import { MessageSquare, WifiOff, Sparkles } from "lucide-react";
+import { MessageSquare, WifiOff, Sparkles, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Index = () => {
-  // 📱 Sidebar responsivo: fecha no mobile, abre no desktop
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window !== "undefined") {
       return window.innerWidth >= 1024; // lg breakpoint
@@ -29,27 +28,34 @@ const Index = () => {
     renameConversation,
     loadConversations,
     loading: conversationsLoading,
+    error: conversationsError
   } = useConversations();
 
   // 🐛 DEBUG - Log das conversas
   useEffect(() => {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🏠 INDEX.TSX - Estado das Conversas:");
+    console.log("INDEX.TSX - Estado das Conversas:");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📊 Conversas:", conversations);
-    console.log("📊 Tipo:", typeof conversations);
-    console.log("📊 É Array?", Array.isArray(conversations));
-    console.log("📊 Quantidade:", conversations?.length || 0);
-    console.log("📊 Loading:", conversationsLoading);
-    console.log("📊 Current ID:", currentConversationId);
+    console.log("Conversas:", conversations);
+    console.log("Tipo:", typeof conversations);
+    console.log("É Array?", Array.isArray(conversations));
+    console.log("Quantidade:", conversations?.length || 0);
+    console.log("Loading:", conversationsLoading);
+    console.log("Current ID:", currentConversationId);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     
     if (conversations && conversations.length > 0) {
-      console.log("✅ Primeira conversa:", conversations[0]);
+      console.log("Conversas encontradas:");
+      conversations.forEach((conv, index) => {
+        console.log(` ${index + 1}. ID: ${conv.id}, Título: "${conv.title}"`);
+      });
     } else {
-      console.log("❌ Nenhuma conversa encontrada!");
+      console.log("Nenhuma conversa encontrada!");
+      if(conversationsError){
+        console.log("Erro:", conversationsError);
+      }
     }
-  }, [conversations, conversationsLoading, currentConversationId]);
+  }, [conversations, conversationsLoading, conversationsError, currentConversationId]);
 
   const {
     messages,
@@ -60,12 +66,15 @@ const Index = () => {
   } = useChat(currentConversationId || undefined);
 
   const { online } = useBackendStatus();
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // 🔄 Sincronizar IDs entre hooks
   useEffect(() => {
-    setChatConversationId(currentConversationId);
+    if (setChatConversationId) {
+      setChatConversationId(currentConversationId);
+    }
   }, [currentConversationId, setChatConversationId]);
 
   // 📱 Ajustar sidebar ao redimensionar janela
@@ -101,12 +110,15 @@ const Index = () => {
 
   // 📜 Auto-scroll suave para última mensagem
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, isTyping]);
 
   // 🔄 Recarregar conversas após enviar mensagem
   useEffect(() => {
-    if (!isTyping && messages.length > 0) {
+    if (!isTyping && messages.length > 0 && loadConversations) {
+      console.log("🔄 Recarregando conversas após nova mensagem...");
       loadConversations();
     }
   }, [isTyping, messages.length, loadConversations]);
@@ -124,20 +136,29 @@ const Index = () => {
     async (suggestion: string) => {
       console.log("💡 Sugestão clicada:", suggestion);
       
-      // Criar nova conversa se não houver uma selecionada
-      if (!currentConversationId) {
-        console.log("➕ Criando nova conversa...");
-        const newId = await newConversation();
-        if (newId) {
-          console.log("✅ Nova conversa criada com ID:", newId);
-          setCurrentConversationId(newId);
+      try {
+        // Criar nova conversa se não houver uma selecionada
+        if (!currentConversationId) {
+          console.log("➕ Criando nova conversa para sugestão...");
+          const newId = await newConversation();
+          if (newId) {
+            console.log("✅ Nova conversa criada com ID:", newId);
+            setCurrentConversationId(newId);
+          } else {
+            console.error("❌ Falha ao criar nova conversa");
+            return;
+          }
         }
-      }
-      sendMessage(suggestion);
+        
+        // Enviar mensagem
+        sendMessage(suggestion);
 
-      // Fechar sidebar no mobile após selecionar sugestão
-      if (window.innerWidth < 1024) {
-        setSidebarOpen(false);
+        // Fechar sidebar no mobile após selecionar sugestão
+        if (window.innerWidth < 1024) {
+          setSidebarOpen(false);
+        }
+      } catch (error) {
+        console.error("❌ Erro ao processar sugestão:", error);
       }
     },
     [currentConversationId, newConversation, setCurrentConversationId, sendMessage]
@@ -145,17 +166,22 @@ const Index = () => {
 
   const handleNewConversation = useCallback(async () => {
     console.log("🆕 Botão New Chat clicado");
-    const newId = await newConversation();
-    if (newId) {
-      console.log("✅ Nova conversa criada com ID:", newId);
-      setCurrentConversationId(newId);
-    } else {
-      console.log("❌ Falha ao criar nova conversa");
-    }
+    
+    try {
+      const newId = await newConversation();
+      if (newId) {
+        console.log("✅ Nova conversa criada com ID:", newId);
+        setCurrentConversationId(newId);
+      } else {
+        console.error("❌ Falha ao criar nova conversa");
+      }
 
-    // Fechar sidebar no mobile após criar conversa
-    if (window.innerWidth < 1024) {
-      setSidebarOpen(false);
+      // Fechar sidebar no mobile após criar conversa
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false);
+      }
+    } catch (error) {
+      console.error("❌ Erro ao criar nova conversa:", error);
     }
   }, [newConversation, setCurrentConversationId]);
 
@@ -172,20 +198,46 @@ const Index = () => {
     [setCurrentConversationId]
   );
 
+  const handleDeleteConversation = useCallback(
+    (id: number) => {
+      console.log("🗑️ Solicitação para deletar conversa:", id);
+      
+      if (window.confirm("Tem certeza que deseja deletar esta conversa?")) {
+        console.log("✅ Confirmado - deletando conversa:", id);
+        removeConversation(id);
+      } else {
+        console.log("❌ Cancelado - conversa não deletada");
+      }
+    },
+    [removeConversation]
+  );
+
+  const handleRenameConversation = useCallback(
+    (id: number, newTitle: string) => {
+      console.log("✏️ Renomeando conversa:", id, "para:", newTitle);
+      renameConversation(id, newTitle);
+    },
+    [renameConversation]
+  );
+
   const handleClearChat = useCallback(() => {
-    if (
-      currentConversationId &&
-      window.confirm("Tem certeza que deseja deletar esta conversa?")
-    ) {
-      console.log("🗑️ Deletando conversa:", currentConversationId);
-      removeConversation(currentConversationId);
+    if (currentConversationId) {
+      handleDeleteConversation(currentConversationId);
     }
-  }, [currentConversationId, removeConversation]);
+  }, [currentConversationId, handleDeleteConversation]);
 
   const handleToggleSidebar = useCallback(() => {
     console.log("🔄 Toggle sidebar:", !sidebarOpen);
     setSidebarOpen((prev) => !prev);
   }, [sidebarOpen]);
+
+  // 🔄 Função para tentar reconectar
+  const handleRetryConnection = useCallback(() => {
+    console.log("🔄 Tentando reconectar...");
+    if (loadConversations) {
+      loadConversations();
+    }
+  }, [loadConversations]);
 
   return (
     <div className="min-h-screen bg-background flex relative overflow-hidden">
@@ -194,7 +246,7 @@ const Index = () => {
 
       {/* 📂 Sidebar */}
       <Sidebar
-        conversations={conversations || []}
+        conversations={Array.isArray(conversations) ? conversations : []}
         currentConversationId={currentConversationId}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
