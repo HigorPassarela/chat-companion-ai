@@ -36,16 +36,12 @@ export const useConversations = (): UseConversationsReturn => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
-      console.log("📋 Variáveis de ambiente:");
-      console.log("   VITE_SUPABASE_URL:", supabaseUrl ? `${supabaseUrl}` : "FALTANDO");
-      console.log("   VITE_SUPABASE_ANON_KEY:", supabaseKey ? `${supabaseKey.substring(0, 20)}...` : "FALTANDO");
-      
       if (!supabaseUrl || !supabaseKey) {
         throw new Error("Variáveis de ambiente do Supabase não configuradas corretamente");
       }
       
       // Teste de conexão básica
-      console.log("🔌 Testando conexão básica...");
+      console.log("Testando conexão básica...");
       const isConnected = await testConnection();
       
       if (!isConnected) {
@@ -78,7 +74,7 @@ export const useConversations = (): UseConversationsReturn => {
         throw new Error("Falha na conexão com Supabase - verifique as variáveis de ambiente");
       }
 
-      console.log("📡 Executando listConversations()...");
+      console.log("Executando listConversations()...");
       const data = await listConversations();
       
       console.log("Resposta recebida do Supabase:");
@@ -150,7 +146,7 @@ export const useConversations = (): UseConversationsReturn => {
     setError(null);
 
     try {
-      console.log("📡 Criando conversa no Supabase...");
+      console.log("Criando conversa no Supabase...");
       
       const newConv = await createConversation("Nova Conversa");
       

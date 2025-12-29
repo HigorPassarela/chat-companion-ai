@@ -21,16 +21,16 @@ export interface Message {
   files?: FileAttachment[];
 }
 
-// ✅ TIPO CORRIGIDO - ID obrigatório para dados vindos do banco
+// TIPO CORRIGIDO - ID obrigatório para dados vindos do banco
 export interface Conversation {
-  id: number;           // ✅ OBRIGATÓRIO (sem ?)
+  id: number;           
   title: string;
-  created_at: string;   // ✅ OBRIGATÓRIO
-  updated_at: string;   // ✅ OBRIGATÓRIO
+  created_at: string;  
+  updated_at: string;   
   message_count?: number;
 }
 
-// ✅ TIPO para inserção (ID opcional)
+// TIPO para inserção (ID opcional)
 export interface ConversationInput {
   id?: number;
   title: string;
@@ -55,7 +55,7 @@ export interface FileAttachment {
  * Criar nova conversa
  */
 export async function createConversation(title = 'Nova Conversa'): Promise<Conversation> {
-  console.log('[Supabase] 🆕 Criando conversa:', title);
+  console.log('[Supabase] Criando conversa:', title);
   
   const { data, error } = await supabase
     .from('conversations')
@@ -80,7 +80,7 @@ export async function createConversation(title = 'Nova Conversa'): Promise<Conve
  * Listar todas as conversas
  */
 export async function listConversations(): Promise<Conversation[]> {
-  console.log('[Supabase] 📋 Listando conversas...');
+  console.log('[Supabase Listando conversas...');
   
   try {
     const { data, error } = await supabase
@@ -88,9 +88,7 @@ export async function listConversations(): Promise<Conversation[]> {
       .select('id, title, created_at, updated_at')
       .order('updated_at', { ascending: false });
     
-    console.log('[Supabase] 📊 Query executada');
-    console.log('[Supabase] 📊 Erro:', error);
-    console.log('[Supabase] 📊 Dados brutos:', data);
+    console.log('[Supabase] Query executada');
     
     if (error) {
       console.error('[Supabase] Erro ao listar conversas:', error);
@@ -98,11 +96,11 @@ export async function listConversations(): Promise<Conversation[]> {
     }
     
     if (!data) {
-      console.log('[Supabase] ⚠️ Nenhum dado retornado');
+      console.log('[Supabase] Nenhum dado retornado');
       return [];
     }
     
-    // ✅ Filtra apenas conversas com ID válido
+    // Filtra apenas conversas com ID válido
     const validConversations = data.filter((conv): conv is Conversation => {
       const isValid = conv && 
                      typeof conv.id === 'number' && 
@@ -112,17 +110,17 @@ export async function listConversations(): Promise<Conversation[]> {
                      conv.updated_at;
       
       if (!isValid) {
-        console.warn('[Supabase] ⚠️ Conversa inválida filtrada:', conv);
+        console.warn('[Supabase] Conversa inválida filtrada:', conv);
       }
       
       return isValid;
     });
     
-    console.log(`[Supabase] ✅ ${validConversations.length} conversas válidas carregadas`);
+    console.log(`[Supabase] ${validConversations.length} conversas válidas carregadas`);
     return validConversations;
     
   } catch (error) {
-    console.error('[Supabase] ❌ Erro completo:', error);
+    console.error('[Supabase] Erro completo:', error);
     throw error;
   }
 }
@@ -302,7 +300,7 @@ export async function getFilesByMessage(messageId: number): Promise<FileAttachme
  */
 export async function testConnection(): Promise<boolean> {
   try {
-    console.log('[Supabase] 🔍 Testando conexão...');
+    console.log('[Supabase] Testando conexão...');
     
     const { data, error } = await supabase
       .from('conversations')
@@ -310,14 +308,14 @@ export async function testConnection(): Promise<boolean> {
       .limit(1);
     
     if (error) {
-      console.error('[Supabase] ❌ Erro de conexão:', error);
+      console.error('[Supabase] Erro de conexão:', error);
       return false;
     }
     
-    console.log('[Supabase] ✅ Conexão OK');
+    console.log('[Supabase] Conexão OK');
     return true;
   } catch (error) {
-    console.error('[Supabase] ❌ Erro de conexão completo:', error);
+    console.error('[Supabase] Erro de conexão completo:', error);
     return false;
   }
 }
