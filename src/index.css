@@ -177,6 +177,35 @@
   animation: pulse-border 3s ease-in-out infinite;
 }
 
+/* ===== SCROLL SUAVE PARA ÁREA DE MENSAGENS ===== */
+.messages-container {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+.messages-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}
+
+/* Evita scroll horizontal desnecessário */
+.messages-container {
+  overflow-x: hidden !important;
+}
+
 @keyframes pulse-border {
   0%, 100% {
     opacity: 0.6;

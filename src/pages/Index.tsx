@@ -94,7 +94,7 @@ const Index = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ⌨️ Atalhos de teclado expandidos
+  //atalhos de teclado expandidos
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl/Cmd + B para toggle sidebar
@@ -260,7 +260,7 @@ const Index = () => {
   }, [loadConversations]);
 
   return (
-    <div className="min-h-screen bg-background flex relative overflow-hidden">
+    <div className="h-screen bg-background flex relative overflow-hidden">
       {/* Botão toggle - Posiciona corretamente */}
       <SidebarToggle isOpen={sidebarOpen} onToggle={handleToggleSidebar} />
 
@@ -277,52 +277,54 @@ const Index = () => {
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Área principal - Ajusta margem conforme sidebar */}
+      {/*Área principal - Layout com altura fixa */}
       <div
         className={cn(
           "flex-1 flex flex-col transition-all duration-300 ease-in-out",
-          "w-full lg:w-auto min-w-0"
+          "w-full lg:w-auto min-w-0 h-full"
         )}
       >
-        {/* Header com contador e botão de limpar */}
-        <ChatHeader
-          online={online}
-          onClearChat={handleClearChat}
-          messageCount={messages.length}
-        />
+        {/*Header fixo - sem flex-shrink */}
+        <div className="flex-shrink-0">
+          <ChatHeader
+            online={online}
+            onClearChat={handleClearChat}
+            messageCount={messages.length}
+          />
 
-        {/* Alerta de conexão offline */}
-        {!online && (
-          <div className="bg-yellow-500/10 border-b border-yellow-500/20 text-yellow-600 dark:text-yellow-500 text-center py-2.5 text-sm flex items-center justify-center gap-2 animate-pulse">
-            <WifiOff className="w-4 h-4" />
-            <span className="font-medium">
-              Servidor offline - Tentando reconectar...
-            </span>
-          </div>
-        )}
+          {/* Alerta de conexão offline */}
+          {!online && (
+            <div className="bg-yellow-500/10 border-b border-yellow-500/20 text-yellow-600 dark:text-yellow-500 text-center py-2.5 text-sm flex items-center justify-center gap-2 animate-pulse">
+              <WifiOff className="w-4 h-4" />
+              <span className="font-medium">
+                Servidor offline - Tentando reconectar...
+              </span>
+            </div>
+          )}
 
-        {/*  Alerta de erro nas conversas */}
-        {conversationsError && (
-          <div className="bg-red-500/10 border-b border-red-500/20 text-red-600 dark:text-red-500 text-center py-2.5 text-sm flex items-center justify-center gap-2">
-            <AlertTriangle className="w-4 h-4" />
-            <span className="font-medium">
-              Erro ao carregar conversas: {conversationsError}
-            </span>
-            <button
-              onClick={handleRetryConnection}
-              className="ml-2 px-2 py-1 bg-red-500/20 hover:bg-red-500/30 rounded text-xs transition-colors"
-            >
-              Tentar novamente
-            </button>
-          </div>
-        )}
+          {/* Alerta de erro nas conversas */}
+          {conversationsError && (
+            <div className="bg-red-500/10 border-b border-red-500/20 text-red-600 dark:text-red-500 text-center py-2.5 text-sm flex items-center justify-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="font-medium">
+                Erro ao carregar conversas: {conversationsError}
+              </span>
+              <button
+                onClick={handleRetryConnection}
+                className="ml-2 px-2 py-1 bg-red-500/20 hover:bg-red-500/30 rounded text-xs transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
+        </div>
 
-        {/* Área principal de mensagens */}
-        <main className="flex-1 overflow-hidden">
-          <div className="h-full max-w-3xl mx-auto flex flex-col">
+        {/*Área principal de mensagens - COM SCROLL INDEPENDENTE */}
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden"> 
+          <div className="h-full max-w-3xl mx-auto flex flex-col min-h-0"> 
             <div
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scroll-smooth"
+              className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 space-y-6 scroll-smooth messages-container" 
             >
               {messages.length === 0 ? (
                 /* Estado vazio - Tela inicial */
@@ -393,6 +395,7 @@ const Index = () => {
                       content={message.content}
                       role={message.role}
                       imageUrl={message.imageUrl}
+                      files={message.files}
                       isNew={index === messages.length - 1}
                     />
                   ))}
@@ -408,15 +411,15 @@ const Index = () => {
           </div>
         </main>
 
-        {/* Footer fixo com input */}
-        <footer className="border-t border-border/50 bg-background/80 backdrop-blur-xl sticky bottom-0">
+        {/*Footer fixo - sem sticky */}
+        <div className="flex-shrink-0 border-t border-border/50 bg-background/80 backdrop-blur-xl"> {/* ✅ Removido sticky bottom-0 */}
           <div className="max-w-3xl mx-auto px-4 py-4">
             <ChatInput 
               onSend={sendMessage} 
               disabled={isTyping || !online || !!conversationsError} 
             />
 
-            {/* Aviso legal */}
+            {/*Aviso legal */}
             <p className="text-center text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1.5 flex-wrap">
               <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50" />
               <span>
@@ -426,10 +429,10 @@ const Index = () => {
               <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50" />
             </p>
           </div>
-        </footer>
+        </div>
       </div>
 
-      {/* 🔧 Botão para ativar/desativar debug - Só aparece em desenvolvimento */}
+      {/*Botão para ativar/desativar debug - Só aparece em desenvolvimento */}
       {process.env.NODE_ENV === "development" && (
         <button
           onClick={() => setShowDebugPanel(prev => !prev)}
@@ -450,13 +453,13 @@ const Index = () => {
         </button>
       )}
 
-      {/* 🐛 DEBUG - Painel controlável */}
+      {/* DEBUG - Painel controlável */}
       {showDebugPanel && (
         <div className="fixed bottom-4 right-4 z-[100] bg-black/95 text-white px-4 py-3 rounded-lg text-xs font-mono shadow-2xl border border-primary/50 backdrop-blur-sm">
           <div className="space-y-1.5">
             {/* Header do Debug */}
             <div className="flex items-center justify-between gap-2 pb-1 border-b border-white/20">
-              <span className="text-primary font-bold"> DEBUG PANEL</span>
+              <span className="text-primary font-bold">🐛 DEBUG PANEL</span>
               <button
                 onClick={() => setShowDebugPanel(false)}
                 className="text-gray-400 hover:text-white text-sm"
@@ -481,7 +484,7 @@ const Index = () => {
             <div className="flex items-center gap-2 text-[10px]">
               <span className="text-gray-400">Sidebar:</span>
               <span className={sidebarOpen ? "text-green-400" : "text-red-400"}>
-                {sidebarOpen ? " Aberta" : " Fechada"}
+                {sidebarOpen ? "Aberta" : "Fechada"}
               </span>
             </div>
 
@@ -493,9 +496,9 @@ const Index = () => {
                 conversationsLoading ? "text-yellow-400" : 
                 conversations?.length > 0 ? "text-green-400" : "text-gray-400"
               }>
-                {conversationsLoading ? " Carregando..." : 
-                 conversationsError ? " Erro" :
-                 ` ${conversations?.length || 0}`}
+                {conversationsLoading ? "⏳ Carregando..." : 
+                 conversationsError ? "❌ Erro" :
+                 `${conversations?.length || 0}`}
               </span>
             </div>
 
@@ -503,7 +506,7 @@ const Index = () => {
             <div className="flex items-center gap-2 text-[10px]">
               <span className="text-gray-400">Backend:</span>
               <span className={online ? "text-green-400" : "text-red-400"}>
-                {online ? " Online" : " Offline"}
+                {online ? "Online" : "Offline"}
               </span>
             </div>
 
