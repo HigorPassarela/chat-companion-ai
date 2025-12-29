@@ -38,19 +38,19 @@ export const Sidebar = ({
   // 🐛 DEBUG
   useEffect(() => {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📂 SIDEBAR RENDERIZADO");
-    console.log("📊 Conversas recebidas:", conversations);
-    console.log("📊 Quantidade:", conversations?.length || 0);
-    console.log("📊 isOpen:", isOpen);
-    console.log("📊 loading:", loading);
+    console.log(" SIDEBAR RENDERIZADO");
+    console.log(" Conversas recebidas:", conversations);
+    console.log(" Quantidade:", conversations?.length || 0);
+    console.log(" isOpen:", isOpen);
+    console.log(" loading:", loading);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   }, [conversations, isOpen, loading]);
 
   const groupConversationsByDate = () => {
-    console.log("📅 Agrupando conversas...");
+    console.log(" Agrupando conversas...");
 
     if (!conversations || conversations.length === 0) {
-      console.log("⚠️ Nenhuma conversa para agrupar");
+      console.log(" Nenhuma conversa para agrupar");
       return [];
     }
 
@@ -74,7 +74,7 @@ export const Sidebar = ({
     };
 
     conversations.forEach((conv, index) => {
-      console.log(`📅 Processando conversa ${index + 1}:`, conv.title);
+      console.log(` Processando conversa ${index + 1}:`, conv.title);
 
       const convDate = new Date(conv.updated_at);
       const convDateOnly = new Date(
@@ -98,7 +98,7 @@ export const Sidebar = ({
 
     const result = Object.entries(groups).filter(([_, convs]) => convs.length > 0);
 
-    console.log("📅 Grupos criados:");
+    console.log(" Grupos criados:");
     result.forEach(([name, convs]) => {
       console.log(`  - ${name}: ${convs.length} conversa(s)`);
     });
@@ -132,7 +132,7 @@ export const Sidebar = ({
 
   const groupedConversations = groupConversationsByDate();
 
-  console.log("🎨 Renderizando Sidebar com", groupedConversations.length, "grupos");
+  console.log(" Renderizando Sidebar com", groupedConversations.length, "grupos");
 
   return (
     <>

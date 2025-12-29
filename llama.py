@@ -100,7 +100,7 @@ def get_conversations():
         
         conversations = response.data if response.data else []
         
-        logger.info(f"[API] ✅ Retornando {len(conversations)} conversas")
+        logger.info(f"[API] Retornando {len(conversations)} conversas")
         return jsonify(conversations)
     
     except Exception as e:
@@ -127,7 +127,7 @@ def create_conversation():
         
         if response.data:
             conversation = response.data[0]
-            logger.info(f"[API] ✅ Conversa criada: ID={conversation['id']}")
+            logger.info(f"[API] Conversa criada: ID={conversation['id']}")
             return jsonify(conversation), 201
         else:
             logger.error("[ERROR] Falha ao criar conversa")
@@ -178,7 +178,7 @@ def update_conversation(conversation_id):
         }).eq("id", conversation_id).execute()
         
         if response.data and len(response.data) > 0:
-            logger.info(f"[API] ✅ Conversa {conversation_id} atualizada")
+            logger.info(f"[API] Conversa {conversation_id} atualizada")
             return jsonify(response.data[0])
         else:
             return jsonify({"error": "Conversa não encontrada"}), 404
@@ -204,7 +204,7 @@ def delete_conversation(conversation_id):
         
         response = supabase.table("conversations").delete().eq("id", conversation_id).execute()
         
-        logger.info(f"[API] ✅ Conversa {conversation_id} deletada")
+        logger.info(f"[API] Conversa {conversation_id} deletada")
         return jsonify({"message": "Conversa deletada com sucesso"}), 200
     
     except Exception as e:

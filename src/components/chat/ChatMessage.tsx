@@ -26,7 +26,11 @@ export const ChatMessage = ({ content, role, imageUrl ,isNew = false }: ChatMess
         {isUser ? (
           <User className="w-4 h-4 text-secondary-foreground" />
         ) : (
-          <Bot className="w-4 h-4 text-primary-foreground" />
+          <img 
+              src="/llama.svg" 
+              alt="OllamaCode" 
+              className="w-full h-full object-contain"
+            />
         )}
       </div>
 

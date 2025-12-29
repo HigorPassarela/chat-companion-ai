@@ -30,7 +30,7 @@ export const useChat = (initialConversationId?: number) => {
     } else {
       setMessages([]); // Limpar se não houver conversa
     }
-  }, [currentConversationId]); // 👈 Reage a mudanças no ID
+  }, [currentConversationId]); // 
 
   const loadMessages = async (convId: number) => {
     try {
@@ -180,7 +180,7 @@ export const useChat = (initialConversationId?: number) => {
                     const newMessages = [...prev];
                     const lastMsg = newMessages.find((m) => m.id === assistantMessageId);
                     if (lastMsg) {
-                      lastMsg.content = `❌ Erro: ${data.error}`;
+                      lastMsg.content = ` Erro: ${data.error}`;
                     }
                     return newMessages;
                   });
@@ -199,7 +199,7 @@ export const useChat = (initialConversationId?: number) => {
           ...prev,
           {
             id: (Date.now() + 1).toString(),
-            content: `❌ Erro ao conectar: ${
+            content: ` Erro ao conectar: ${
               error instanceof Error ? error.message : "Erro desconhecido"
             }`,
             role: "assistant",

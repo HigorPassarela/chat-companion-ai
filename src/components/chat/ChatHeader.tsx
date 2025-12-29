@@ -19,7 +19,11 @@ export const ChatHeader = ({ online, onClearChat, messageCount = 0 }: ChatHeader
         {/* Logo e status */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-            <Bot className="w-6 h-6 text-primary-foreground" />
+          <img 
+              src="/llama.svg" 
+              alt="OllamaCode Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg font-bold text-foreground truncate">OllamaCode</h1>
