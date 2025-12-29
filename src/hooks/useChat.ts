@@ -15,6 +15,14 @@ interface Message {
   role: "user" | "assistant";
   imageUrl?: string;
   timestamp: number;
+  files?: Array<{
+    id: number;
+    filename: string;
+    file_type: string;
+    file_size: number;
+    file_url: string;
+    file_content?: string;
+  }>;
 }
 
 export const useChat = (initialConversationId?: number) => {
@@ -29,9 +37,9 @@ export const useChat = (initialConversationId?: number) => {
     if (currentConversationId) {
       loadMessages(currentConversationId);
     } else {
-      setMessages([]); // Limpar se não houver conversa
+      setMessages([]);
     }
-  }, [currentConversationId]); // 
+  }, [currentConversationId]);
 
   const loadMessages = async (convId: number) => {
     try {
@@ -44,13 +52,14 @@ export const useChat = (initialConversationId?: number) => {
         role: msg.role,
         timestamp: msg.timestamp,
         imageUrl: msg.files?.[0]?.file_url || undefined,
+        files: msg.files || [],
       }));
       
       setMessages(formattedMessages);
       console.log(`[useChat] ${formattedMessages.length} mensagens carregadas`);
     } catch (error) {
       console.error("[useChat] Erro ao carregar mensagens:", error);
-      setMessages([]); // Limpar em caso de erro
+      setMessages([]);
     }
   };
 
@@ -60,6 +69,7 @@ export const useChat = (initialConversationId?: number) => {
         // Criar conversa se não existir
         let convId = currentConversationId;
         let isNewConversation = false;
+        
         if (!convId) {
           const conversation = await createConversation();
           convId = conversation.id!;
@@ -69,9 +79,7 @@ export const useChat = (initialConversationId?: number) => {
         }
 
         const timestamp = Date.now();
-
-        //Verifica sé a primeira mensagem da conversa
-        const isFistMessage = messages.length === 0;
+        const isFirstMessage = messages.length === 0;
 
         // Adicionar mensagem do usuário na UI
         const userMessage: Message = {
@@ -80,6 +88,14 @@ export const useChat = (initialConversationId?: number) => {
           role: "user",
           imageUrl: imageFile ? URL.createObjectURL(imageFile) : undefined,
           timestamp,
+          files: imageFile ? [{
+            id: 0, // Temporário
+            filename: imageFile.name,
+            file_type: imageFile.type,
+            file_size: imageFile.size,
+            file_url: URL.createObjectURL(imageFile),
+            file_content: undefined
+          }] : undefined,
         };
         setMessages((prev) => [...prev, userMessage]);
         setIsTyping(true);
@@ -92,21 +108,40 @@ export const useChat = (initialConversationId?: number) => {
           timestamp,
         });
 
-        //Auto-renomear conversa se for a primeira mensagem
-        if (isFistMessage || isNewConversation) {
+        // Auto-renomear conversa se for a primeira mensagem
+        if (isFirstMessage || isNewConversation) {
           console.log(`[useChat] Primeira mensagem detectada, renomeando conversa ${convId}...`);
           try {
             await autoUpdateConversationTitle(convId, content);
             console.log(`[useChat] Conversa renomeada com sucesso!`);
           } catch (renameError) {
-            console.warn(`[useChat] Erro ao renomear conversa`, renameError);
+            console.warn(`[useChat] Erro ao renomear conversa:`, renameError);
           }
         }
 
         // Salvar arquivo se houver
         let fileContent = null;
         if (imageFile && savedUserMessage.id) {
-          await saveFile(savedUserMessage.id, imageFile);
+          const savedFile = await saveFile(savedUserMessage.id, imageFile);
+          
+          // Atualizar a mensagem com os dados reais do arquivo
+          setMessages((prev) => 
+            prev.map((msg) => 
+              msg.id === timestamp.toString() 
+                ? {
+                    ...msg,
+                    files: [{
+                      id: savedFile.id!,
+                      filename: savedFile.filename,
+                      file_type: savedFile.file_type,
+                      file_size: savedFile.file_size,
+                      file_url: savedFile.file_url!,
+                      file_content: savedFile.file_content
+                    }]
+                  }
+                : msg
+            )
+          );
           
           // Ler conteúdo se for texto
           const textExtensions = ['txt', 'csv', 'json', 'py', 'js', 'jsx', 'ts', 'tsx', 'html', 'css'];
@@ -197,7 +232,7 @@ export const useChat = (initialConversationId?: number) => {
                     const newMessages = [...prev];
                     const lastMsg = newMessages.find((m) => m.id === assistantMessageId);
                     if (lastMsg) {
-                      lastMsg.content = ` Erro: ${data.error}`;
+                      lastMsg.content = `Erro: ${data.error}`;
                     }
                     return newMessages;
                   });
@@ -216,7 +251,7 @@ export const useChat = (initialConversationId?: number) => {
           ...prev,
           {
             id: (Date.now() + 1).toString(),
-            content: ` Erro ao conectar: ${
+            content: `Erro ao conectar: ${
               error instanceof Error ? error.message : "Erro desconhecido"
             }`,
             role: "assistant",
@@ -226,7 +261,7 @@ export const useChat = (initialConversationId?: number) => {
         setIsTyping(false);
       }
     },
-    [currentConversationId]
+    [currentConversationId, messages.length]
   );
 
   const clearHistory = useCallback(async () => {

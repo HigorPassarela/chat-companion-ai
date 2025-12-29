@@ -395,6 +395,7 @@ const Index = () => {
                       content={message.content}
                       role={message.role}
                       imageUrl={message.imageUrl}
+                      files={message.files}
                       isNew={index === messages.length - 1}
                     />
                   ))}
