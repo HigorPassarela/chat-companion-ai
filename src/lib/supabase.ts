@@ -9,7 +9,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// ===== TIPOS CORRIGIDOS =====
+// ===== TIPOS =====
 
 export interface Message {
   id?: number;
@@ -21,7 +21,6 @@ export interface Message {
   files?: FileAttachment[];
 }
 
-// TIPO CORRIGIDO - ID obrigatório para dados vindos do banco
 export interface Conversation {
   id: number;           
   title: string;
@@ -30,7 +29,6 @@ export interface Conversation {
   message_count?: number;
 }
 
-// TIPO para inserção (ID opcional)
 export interface ConversationInput {
   id?: number;
   title: string;
@@ -49,7 +47,7 @@ export interface FileAttachment {
   created_at?: string;
 }
 
-// ===== FUNÇÕES CRUD CORRIGIDAS =====
+// ===== FUNÇÕES CRUD =====
 
 /**
  * Criar nova conversa
@@ -80,15 +78,13 @@ export async function createConversation(title = 'Nova Conversa'): Promise<Conve
  * Listar todas as conversas
  */
 export async function listConversations(): Promise<Conversation[]> {
-  console.log('[Supabase Listando conversas...');
+  console.log('[Supabase] Listando conversas...');
   
   try {
     const { data, error } = await supabase
       .from('conversations')
       .select('id, title, created_at, updated_at')
       .order('updated_at', { ascending: false });
-    
-    console.log('[Supabase] Query executada');
     
     if (error) {
       console.error('[Supabase] Erro ao listar conversas:', error);
@@ -100,7 +96,7 @@ export async function listConversations(): Promise<Conversation[]> {
       return [];
     }
     
-    // Filtra apenas conversas com ID válido
+    // Filtra apenas conversas válidas
     const validConversations = data.filter((conv): conv is Conversation => {
       const isValid = conv && 
                      typeof conv.id === 'number' && 
@@ -116,7 +112,7 @@ export async function listConversations(): Promise<Conversation[]> {
       return isValid;
     });
     
-    console.log(`[Supabase] ${validConversations.length} conversas válidas carregadas`);
+    console.log(`[Supabase] ${validConversations.length} conversas carregadas`);
     return validConversations;
     
   } catch (error) {
@@ -232,29 +228,54 @@ export async function getMessages(conversationId: number): Promise<Message[]> {
  */
 export async function saveFile(messageId: number, file: File): Promise<FileAttachment> {
   try {
-    // 1. Upload do arquivo para Storage
-    const fileName = `${Date.now()}_${file.name}`;
+    console.log('[Supabase] Iniciando upload:', file.name);
+    
+    // 1. Gerar nome único para o arquivo
+    const timestamp = Date.now();
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `${timestamp}_${cleanFileName}`;
+    
+    console.log('[Supabase] Fazendo upload como:', fileName);
+    
+    // 2. Upload do arquivo para Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('chat-files')
-      .upload(fileName, file);
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
     
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error('[Supabase] Erro no upload:', uploadError);
+      throw new Error(`Erro no upload: ${uploadError.message}`);
+    }
     
-    // 2. Obter URL público
+    console.log('[Supabase] Upload realizado:', uploadData.path);
+    
+    // 3. Obter URL público
     const { data: urlData } = supabase.storage
       .from('chat-files')
       .getPublicUrl(fileName);
     
-    // 3. Ler conteúdo se for arquivo de texto
+    console.log('[Supabase] 🔗 URL pública gerada');
+    
+    // 4. Ler conteúdo se for arquivo de texto
     let fileContent = null;
-    const textExtensions = ['txt', 'csv', 'json', 'py', 'js', 'jsx', 'ts', 'tsx', 'html', 'css'];
+    const textExtensions = ['txt', 'csv', 'json', 'py', 'js', 'jsx', 'ts', 'tsx', 'html', 'css', 'md', 'xml', 'yml', 'yaml'];
     const extension = file.name.split('.').pop()?.toLowerCase();
     
     if (extension && textExtensions.includes(extension)) {
-      fileContent = await file.text();
+      try {
+        fileContent = await file.text();
+        console.log('[Supabase] Conteúdo extraído:', fileContent.length, 'caracteres');
+      } catch (textError) {
+        console.warn('[Supabase] Erro ao ler conteúdo:', textError);
+      }
     }
     
-    // 4. Salvar referência no banco
+    // 5. Salvar referência no banco
+    console.log('[Supabase] Salvando referência no banco...');
+    
     const { data, error } = await supabase
       .from('files')
       .insert({
@@ -268,18 +289,39 @@ export async function saveFile(messageId: number, file: File): Promise<FileAttac
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('[Supabase] Erro ao salvar no banco:', error);
+      throw new Error(`Erro ao salvar referência: ${error.message}`);
+    }
     
-    console.log('[Supabase] Arquivo salvo:', data.id);
+    console.log('[Supabase] Arquivo salvo com sucesso! ID:', data.id);
     return data;
+    
   } catch (error) {
-    console.error('[Supabase] Erro ao salvar arquivo:', error);
+    console.error('[Supabase] ERRO COMPLETO no saveFile:', error);
+    
+    // Mensagens de erro mais amigáveis
+    if (error instanceof Error) {
+      if (error.message.includes('Bucket not found')) {
+        throw new Error('Bucket de arquivos não encontrado. Verifique a configuração do Storage.');
+      }
+      if (error.message.includes('Row Level Security')) {
+        throw new Error('Erro de permissão. Verifique as políticas RLS do Storage.');
+      }
+      if (error.message.includes('File size')) {
+        throw new Error('Arquivo muito grande. Limite máximo excedido.');
+      }
+      if (error.message.includes('not allowed')) {
+        throw new Error('Tipo de arquivo não permitido.');
+      }
+    }
+    
     throw error;
   }
 }
 
 /**
- * Buscar arquivo por ID de mensagem
+ * Buscar arquivos por ID de mensagem
  */
 export async function getFilesByMessage(messageId: number): Promise<FileAttachment[]> {
   const { data, error } = await supabase
@@ -292,7 +334,57 @@ export async function getFilesByMessage(messageId: number): Promise<FileAttachme
     throw error;
   }
   
-  return data;
+  return data || [];
+}
+
+/**
+ * Deletar arquivo do Storage e banco
+ */
+export async function deleteFile(fileId: number): Promise<void> {
+  try {
+    // 1. Buscar informações do arquivo
+    const { data: fileData, error: fetchError } = await supabase
+      .from('files')
+      .select('file_url')
+      .eq('id', fileId)
+      .single();
+    
+    if (fetchError) {
+      console.error('[Supabase] Erro ao buscar arquivo:', fetchError);
+      throw fetchError;
+    }
+    
+    // 2. Extrair nome do arquivo da URL
+    const fileName = fileData.file_url.split('/').pop();
+    
+    if (fileName) {
+      // 3. Deletar do Storage
+      const { error: storageError } = await supabase.storage
+        .from('chat-files')
+        .remove([fileName]);
+      
+      if (storageError) {
+        console.warn('[Supabase] Erro ao deletar do storage:', storageError);
+      }
+    }
+    
+    // 4. Deletar registro do banco
+    const { error: dbError } = await supabase
+      .from('files')
+      .delete()
+      .eq('id', fileId);
+    
+    if (dbError) {
+      console.error('[Supabase] Erro ao deletar do banco:', dbError);
+      throw dbError;
+    }
+    
+    console.log('[Supabase] Arquivo deletado:', fileId);
+    
+  } catch (error) {
+    console.error('[Supabase] Erro ao deletar arquivo:', error);
+    throw error;
+  }
 }
 
 /**
