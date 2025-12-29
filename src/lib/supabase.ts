@@ -50,6 +50,55 @@ export interface FileAttachment {
 // ===== FUNÇÕES CRUD =====
 
 /**
+ * Gerar titulo inteligente com base na primeira mensagem
+ */
+export async function generateConversationTitle(message: string): Promise<string> {
+  const cleanMessage = message.trim().replace(/\n+/g, ' ').replace(/\s+/g, ' ');
+
+  const patterns = [
+    { regex: /^(o que é|o que são|oque é|oque são)\s+(.+)/i, format: (match: RegExpMatchArray) => `O que é ${match[2]}` },
+    { regex: /^(como fazer|como criar|como|como posso)\s+(.+)/i, format: (match: RegExpMatchArray) => `Como ${match[2]}` },
+    { regex: /^(por que|porque|pq)\s+(.+)/i, format: (match: RegExpMatchArray) => `Por que ${match[2]}` },
+    { regex: /^(qual|quais)\s+(.+)/i, format: (match: RegExpMatchArray) => `Qual ${match[2]}` },
+    { regex: /^(explique|explica|me explique)\s+(.+)/i, format: (match: RegExpMatchArray) => `Explicar ${match[2]}` },
+    { regex: /^(diferença entre|diferenca entre|diff entre)\s+(.+)/i, format: (match: RegExpMatchArray) => `Diferença entre ${match[2]}` },
+    { regex: /^(me ajude|ajuda|help)\s+(.+)/i, format: (match: RegExpMatchArray) => `Ajuda com ${match[2]}` },
+    { regex: /^(tutorial|como usar)\s+(.+)/i, format: (match: RegExpMatchArray) => `Tutorial ${match[2]}` },
+  ];
+
+  //encontrar um padrão
+  for (const pattern of patterns) {
+    const match = cleanMessage.match(pattern.regex);
+    if (match) {
+      let title = pattern.format(match);
+      //limita tamanho
+      if (title.length > 50) {
+        title = title.substring(0, 47) + '...';
+      }
+
+      return title;
+    }
+  }
+}
+
+/**
+ * Atualizar titulo automaticamente
+ */
+export async function autoUpdateConversationTitle(conversationId: number, firstMessage: string): Promise<void> {
+  try {
+    const newTitle = await generateConversationTitle(firstMessage);
+
+    console.log('[Supabase] Auto-renomeando conversa:', conversationId, newTitle);
+
+    await updateConversationTitle(conversationId, newTitle);
+  
+  } catch (error) {
+    console.error('[Supabase] Erro ao auto-renomear conversa', error);
+    throw error;
+  }
+}
+
+/**
  * Criar nova conversa
  */
 export async function createConversation(title = 'Nova Conversa'): Promise<Conversation> {

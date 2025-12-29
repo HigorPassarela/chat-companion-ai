@@ -5,6 +5,7 @@ import {
   getMessages,
   createConversation,
   saveFile,
+  autoUpdateConversationTitle,
   type Message as DBMessage,
 } from "@/lib/supabase";
 
@@ -23,7 +24,7 @@ export const useChat = (initialConversationId?: number) => {
     initialConversationId || null
   );
 
-  // 💾 Carregar mensagens do Supabase ao mudar conversa
+  // Carregar mensagens do Supabase ao mudar conversa
   useEffect(() => {
     if (currentConversationId) {
       loadMessages(currentConversationId);
@@ -58,14 +59,19 @@ export const useChat = (initialConversationId?: number) => {
       try {
         // Criar conversa se não existir
         let convId = currentConversationId;
+        let isNewConversation = false;
         if (!convId) {
           const conversation = await createConversation();
           convId = conversation.id!;
           setCurrentConversationId(convId);
+          isNewConversation = true;
           console.log(`[useChat] Nova conversa criada: ${convId}`);
         }
 
         const timestamp = Date.now();
+
+        //Verifica sé a primeira mensagem da conversa
+        const isFistMessage = messages.length === 0;
 
         // Adicionar mensagem do usuário na UI
         const userMessage: Message = {
@@ -85,6 +91,17 @@ export const useChat = (initialConversationId?: number) => {
           content,
           timestamp,
         });
+
+        //Auto-renomear conversa se for a primeira mensagem
+        if (isFistMessage || isNewConversation) {
+          console.log(`[useChat] Primeira mensagem detectada, renomeando conversa ${convId}...`);
+          try {
+            await autoUpdateConversationTitle(convId, content);
+            console.log(`[useChat] Conversa renomeada com sucesso!`);
+          } catch (renameError) {
+            console.warn(`[useChat] Erro ao renomear conversa`, renameError);
+          }
+        }
 
         // Salvar arquivo se houver
         let fileContent = null;
