@@ -24,11 +24,11 @@ export const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
 
   const handleSend = () => {
     if ((!message.trim() && !attachedFile) || disabled) return;
-    
+
     onSend(message.trim(), attachedFile || undefined);
     setMessage("");
     setAttachedFile(null);
-    
+
     // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -106,9 +106,8 @@ export const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
 
   return (
     <div
-      className={`glass rounded-2xl p-2 transition-all ${
-        isDragging ? "ring-2 ring-primary" : ""
-      }`}
+      className={`glass rounded-2xl p-2 transition-all ${isDragging ? "ring-2 ring-primary" : ""
+        }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

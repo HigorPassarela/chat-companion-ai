@@ -57,10 +57,10 @@ export const Chat = () => {
                   isNew={index === messages.length - 1}
                 />
               ))}
-              
+
               {/* Indicador de digitação */}
               {isTyping && <TypingIndicator />}
-              
+
               {/* Referência para auto-scroll */}
               <div ref={messagesEndRef} />
             </>
@@ -71,9 +71,9 @@ export const Chat = () => {
       {/* Footer com input */}
       <footer className="border-t border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <ChatInput 
-            onSend={sendMessage} 
-            disabled={isTyping || !online} 
+          <ChatInput
+            onSend={sendMessage}
+            disabled={isTyping || !online}
           />
           <p className="text-center text-xs text-muted-foreground mt-3">
             OllamaCode pode cometer erros. Verifique informações importantes.

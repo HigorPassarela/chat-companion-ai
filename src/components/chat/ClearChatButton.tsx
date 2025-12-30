@@ -15,7 +15,6 @@ export const ClearChatButton = ({ onClear, disabled }: ClearChatButtonProps) => 
       setShowConfirm(false);
     } else {
       setShowConfirm(true);
-      // Auto-cancelar após 3 segundos
       setTimeout(() => setShowConfirm(false), 3000);
     }
   };
@@ -27,8 +26,8 @@ export const ClearChatButton = ({ onClear, disabled }: ClearChatButtonProps) => 
       className={`
         px-3 py-1.5 rounded-lg text-sm font-medium transition-all
         flex items-center gap-2
-        ${showConfirm 
-          ? 'bg-red-500 hover:bg-red-600 text-white' 
+        ${showConfirm
+          ? 'bg-red-500 hover:bg-red-600 text-white'
           : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
         }
         disabled:opacity-50 disabled:cursor-not-allowed

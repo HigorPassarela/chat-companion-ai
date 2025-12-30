@@ -44,10 +44,10 @@ export const Sidebar = ({
   // DEBUG
   useEffect(() => {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📂 SIDEBAR RENDERIZADO");
-    console.log("📊 Conversas:", conversations?.length ?? 0);
-    console.log("📊 isOpen:", isOpen, " loading:", loading);
-    console.log("📊 username:", username);
+    console.log(" SIDEBAR RENDERIZADO");
+    console.log(" Conversas:", conversations?.length ?? 0);
+    console.log(" isOpen:", isOpen, " loading:", loading);
+    console.log(" username:", username);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   }, [conversations, isOpen, loading, username]);
 
@@ -167,7 +167,7 @@ export const Sidebar = ({
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
-              <span className="text-sm text-muted-foreground">Carregando...</span>
+              <span className="text-sm text-muted-foreground">Loading...</span>
             </div>
           ) : groupedConversations.length === 0 ? (
             <div className="text-center py-8 px-4">

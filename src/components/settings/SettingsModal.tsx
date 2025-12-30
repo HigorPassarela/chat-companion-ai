@@ -64,14 +64,14 @@ export const SettingsModal = ({
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center">
       {/* Overlay */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="relative bg-background border border-border rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] max-h-[600px] m-4 flex overflow-hidden">
-        
+
         {/* Sidebar de Tabs */}
         <div className="w-64 bg-muted/30 border-r border-border flex flex-col">
           {/* Header */}
@@ -81,7 +81,7 @@ export const SettingsModal = ({
               Configurações
             </h2>
           </div>
-          
+
           {/* Tabs */}
           <div className="flex-1 p-2">
             {tabs.map((tab) => (
@@ -100,7 +100,7 @@ export const SettingsModal = ({
               </button>
             ))}
           </div>
-          
+
           {/* Footer Actions */}
           <div className="p-2 border-t border-border space-y-2">
             <button
@@ -110,7 +110,7 @@ export const SettingsModal = ({
               <Download className="w-4 h-4" />
               Exportar
             </button>
-            
+
             <label className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer">
               <Upload className="w-4 h-4" />
               {importing ? 'Importando...' : 'Importar'}
@@ -122,7 +122,7 @@ export const SettingsModal = ({
                 disabled={importing}
               />
             </label>
-            
+
             <button
               onClick={handleReset}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-all"
@@ -132,7 +132,7 @@ export const SettingsModal = ({
             </button>
           </div>
         </div>
-        
+
         {/* Content */}
         <div className="flex-1 flex flex-col">
           {/* Header */}
@@ -147,43 +147,43 @@ export const SettingsModal = ({
               <X className="w-5 h-5" />
             </button>
           </div>
-          
+
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'profile' && (
-              <ProfileSettings 
-                settings={settings} 
-                onUpdate={onUpdateSettings} 
+              <ProfileSettings
+                settings={settings}
+                onUpdate={onUpdateSettings}
               />
             )}
             {activeTab === 'appearance' && (
-              <AppearanceSettings 
-                settings={settings} 
-                onUpdate={onUpdateSettings} 
+              <AppearanceSettings
+                settings={settings}
+                onUpdate={onUpdateSettings}
               />
             )}
             {activeTab === 'chat' && (
-              <ChatSettings 
-                settings={settings} 
-                onUpdate={onUpdateSettings} 
+              <ChatSettings
+                settings={settings}
+                onUpdate={onUpdateSettings}
               />
             )}
             {activeTab === 'ai' && (
-              <AISettings 
-                settings={settings} 
-                onUpdate={onUpdateSettings} 
+              <AISettings
+                settings={settings}
+                onUpdate={onUpdateSettings}
               />
             )}
             {activeTab === 'files' && (
-              <FilesSettings 
-                settings={settings} 
-                onUpdate={onUpdateSettings} 
+              <FilesSettings
+                settings={settings}
+                onUpdate={onUpdateSettings}
               />
             )}
             {activeTab === 'advanced' && (
-              <AdvancedSettings 
-                settings={settings} 
-                onUpdate={onUpdateSettings} 
+              <AdvancedSettings
+                settings={settings}
+                onUpdate={onUpdateSettings}
               />
             )}
           </div>
@@ -206,7 +206,7 @@ const ProfileSettings = ({ settings, onUpdate }: { settings: UserSettings; onUpd
         placeholder="Digite seu nome"
       />
     </div>
-    
+
     <div>
       <label className="block text-sm font-medium mb-2">Avatar (URL da imagem)</label>
       <input
@@ -234,7 +234,7 @@ const AppearanceSettings = ({ settings, onUpdate }: { settings: UserSettings; on
         <option value="auto">Automático</option>
       </select>
     </div>
-    
+
     <div>
       <label className="block text-sm font-medium mb-2">Cor primária</label>
       <input
@@ -244,7 +244,7 @@ const AppearanceSettings = ({ settings, onUpdate }: { settings: UserSettings; on
         className="w-20 h-10 border border-border rounded-lg cursor-pointer"
       />
     </div>
-    
+
     <div>
       <label className="block text-sm font-medium mb-2">Tamanho da fonte</label>
       <select
@@ -276,7 +276,7 @@ const ChatSettings = ({ settings, onUpdate }: { settings: UserSettings; onUpdate
         className="w-full"
       />
     </div>
-    
+
     <div className="flex items-center gap-3">
       <input
         type="checkbox"
@@ -289,7 +289,7 @@ const ChatSettings = ({ settings, onUpdate }: { settings: UserSettings; onUpdate
         Auto-scroll das mensagens
       </label>
     </div>
-    
+
     <div className="flex items-center gap-3">
       <input
         type="checkbox"
@@ -319,7 +319,7 @@ const AISettings = ({ settings, onUpdate }: { settings: UserSettings; onUpdate: 
         <option value="mistral">Mistral</option>
       </select>
     </div>
-    
+
     <div>
       <label className="block text-sm font-medium mb-2">
         Criatividade (Temperature): {settings.temperature}
@@ -357,7 +357,7 @@ const FilesSettings = ({ settings, onUpdate }: { settings: UserSettings; onUpdat
         className="w-full"
       />
     </div>
-    
+
     <div className="flex items-center gap-3">
       <input
         type="checkbox"
@@ -385,7 +385,7 @@ const AdvancedSettings = ({ settings, onUpdate }: { settings: UserSettings; onUp
         placeholder="http://localhost:5000"
       />
     </div>
-    
+
     <div className="flex items-center gap-3">
       <input
         type="checkbox"

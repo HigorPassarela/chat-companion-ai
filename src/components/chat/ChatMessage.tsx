@@ -16,10 +16,10 @@ interface ChatMessageProps {
   }>;
 }
 
-export const ChatMessage = ({ 
-  content, 
-  role, 
-  imageUrl, 
+export const ChatMessage = ({
+  content,
+  role,
+  imageUrl,
   isNew = false,
   files
 }: ChatMessageProps) => {
@@ -27,32 +27,29 @@ export const ChatMessage = ({
 
   return (
     <div
-      className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""} ${
-        isNew ? "animate-fade-in-up" : ""
-      }`}
+      className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""} ${isNew ? "animate-fade-in-up" : ""
+        }`}
     >
       <div
-        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-          isUser ? "bg-secondary" : "bg-gradient-to-br from-primary to-accent glow-sm"
-        }`}
+        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isUser ? "bg-secondary" : "bg-gradient-to-br from-primary to-accent glow-sm"
+          }`}
       >
         {isUser ? (
           <User className="w-4 h-4 text-secondary-foreground" />
         ) : (
-          <img 
-            src="/llama.svg" 
-            alt="OllamaCode" 
+          <img
+            src="/llama.svg"
+            alt="OllamaCode"
             className="w-5 h-5 object-contain"
           />
         )}
       </div>
 
       <div
-        className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-          isUser
+        className={`max-w-[80%] px-4 py-3 rounded-2xl ${isUser
             ? "bg-user-bubble text-foreground rounded-br-md"
             : "bg-ai-bubble text-foreground rounded-bl-md border border-border/50"
-        }`}
+          }`}
       >
         {/* Mostrar arquivos anexados */}
         {files && files.length > 0 && (

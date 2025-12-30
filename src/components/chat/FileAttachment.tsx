@@ -68,7 +68,7 @@ export const FileAttachment = ({
       case 'html': return 'text-orange-400 border-orange-400/30 bg-orange-400/10';
       case 'css': return 'text-purple-400 border-purple-400/30 bg-purple-400/10';
       case 'md': return 'text-gray-400 border-gray-400/30 bg-gray-400/10';
-      case 'jpg': case 'jpeg': case 'png': case 'gif': case 'webp': 
+      case 'jpg': case 'jpeg': case 'png': case 'gif': case 'webp':
         return 'text-pink-400 border-pink-400/30 bg-pink-400/10';
       default: return 'text-gray-400 border-gray-400/30 bg-gray-400/10';
     }
@@ -120,8 +120,8 @@ export const FileAttachment = ({
       {/* Preview para imagens */}
       {isImageFile() && (
         <div className="mb-2">
-          <img 
-            src={fileUrl} 
+          <img
+            src={fileUrl}
             alt={filename}
             className="w-full max-h-32 object-cover rounded border border-current/20"
           />
