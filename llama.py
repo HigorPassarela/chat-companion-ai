@@ -394,7 +394,7 @@ def chat_stream(prompt):
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={
-                "model": "llama3.2-vision:11b",
+                "model": "codellama:7b",
                 "prompt": prompt,
                 "stream": True,
                 "options": {

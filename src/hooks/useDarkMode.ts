@@ -12,7 +12,7 @@ interface UseDarkModeReturn {
 
 export const useDarkMode = (): UseDarkModeReturn => {
     const [theme, setThemeState] = useState<Theme>('light');
-    const [isFirstVisit, setIsFirstVisit] = useState(true);
+    const [isFirstVisit, setIsFirstVisit] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
