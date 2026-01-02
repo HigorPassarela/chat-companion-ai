@@ -4,7 +4,7 @@
   <img src="./public/llama.svg" alt="OllamaCode" width="96" />
 </p>
 
-<h3 align="center">Chat com múltiplas conversas, upload/preview de arquivos, Markdown com destaque de código e painel de configurações</h3>
+**Chat com múltiplas conversas, upload/preview de arquivos, Markdown com destaque de código e painel de configurações.**
 
 <p align="center">
   <a href="#destaques">Destaques</a> •
@@ -19,17 +19,16 @@
 
 ## 🎯 Destaques
 
-- Multi-conversas com agrupamento por data na sidebar
-- Upload para bucket Supabase (`chat-files`) com preview/download/visualização de `.txt`
-- Renderização Markdown (GFM) com syntax highlighting (highlight.js)
-- Painel de configurações (tema light/dark/auto, cor primária, tamanho de fonte, preferências de chat/IA)
-- Auto-rename de conversa com base na primeira mensagem
-- Layout responsivo com Tailwind CSS
+- Multi-conversas com agrupamento por data na sidebar.
+- Upload para bucket Supabase (`chat-files`) com preview, download e visualização de `.txt`.
+- Renderização Markdown (GFM) com syntax highlighting (highlight.js).
+- Painel de configurações: tema (dark/light/auto), cor primária, tamanho da fonte, preferências de chat/IA.
+- Auto-rename de conversa com base na primeira mensagem.
+- Layout responsivo com Tailwind CSS.
 
 ---
 
-## 📸 Screenshots (substitua imagens em `/public/docs/`)
-
+## 📸 Screenshots (substitua com seus próprios)
 - Configurações  
   ![Configurações](./public/docs/settings.png)
 
@@ -52,26 +51,24 @@
 ```bash
 git clone https://github.com/<seu-usuario>/ollamacode.git
 cd ollamacode
-Instale dependências:
-bash
-Copiar código
+```
+## Instale dependências:
 npm install
 # ou
 pnpm install
 # ou
 yarn
-Crie arquivo de ambiente .env.local:
-env
-Copiar código
+
+## Crie o arquivo de ambiente .env.local:
 VITE_SUPABASE_URL=https://<SEU_PROJECT_ID>.supabase.co
 VITE_SUPABASE_ANON_KEY=<SUA_ANON_PUBLIC_KEY>
-VITE_BACKEND_URL=http://localhost:5000   # opcional, se usar backend local
-🗄️ Supabase — Configuração (Banco e Storage)
-1) Tabelas (SQL)
-Copie e execute no SQL Editor do Supabase:
+# Opcional: backend local
+VITE_BACKEND_URL=http://localhost:5000
 
-sql
-Copiar código
+## 🗄️ Supabase — Configuração (Banco e Storage)
+## 1) Tabelas (SQL)
+Execute no SQL Editor do Supabase:
+```
 CREATE TABLE IF NOT EXISTS conversations (
   id BIGSERIAL PRIMARY KEY,
   title TEXT NOT NULL DEFAULT 'Nova Conversa',
@@ -101,27 +98,26 @@ CREATE TABLE IF NOT EXISTS files (
 
 CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC);
-2) Storage
-Crie um bucket com nome chat-files.
-Para desenvolvimento pode ser público. Em produção, defina políticas RLS apropriadas.
-Exemplo de políticas (SQL Editor) — ajuste conforme autenticação:
+```
 
-sql
-Copiar código
--- Exemplo: Policies podem variar conforme seu modelo de auth
--- Atenção: revise antes de aplicar em produção
-🧭 Como rodar em desenvolvimento
-bash
-Copiar código
-# frontend
+## 2) Storage
+Crie um bucket chamado chat-files.
+Para desenvolvimento, pode ser público. Em produção, criar políticas RLS apropriadas.
+
+## 🧭 Como rodar em desenvolvimento
+Frontend:
+```
 npm run dev
-# backend (se aplicável)
-# python server ou node server conforme setup
-Abra http://localhost:3000 (ou porta indicada pelo Vite).
+# ou pnpm dev / yarn dev
+```
 
-📁 Estrutura principal do projeto
-css
-Copiar código
+Abra http://localhost:3000 (ou a porta indicada pelo Vite).
+
+Se usar backend local (opcional), rode-o em VITE_BACKEND_URL (por exemplo http://localhost:5000).
+
+
+## 📁 Estrutura principal do projeto (resumida)
+```
 src/
   components/
     chat/
@@ -149,57 +145,24 @@ public/
   docs/
     settings.png
     file-preview.png
-🔌 Principais hooks e responsabilidades
-useConversations — lista e gerencia conversas (create/update/delete)
-useChat — envia mensagens, salva no Supabase, faz upload de arquivos, processa streaming de resposta
-useSettings — armazena preferências no localStorage e fornece update/reset/export/import
-useDarkMode — aplica html classes (dark / light / auto) e persiste escolha
-🎨 Configurações (Settings) — como o tema é aplicado
-Ao alterar o tema no modal, a UI é atualizada imediatamente chamando useDarkMode.setTheme(...).
-Cores primárias (HEX) são convertidas para HSL via util e aplicadas às CSS variables do :root (ex.: --primary).
-tailwind.config.ts está com darkMode: ['class'] (usamos classes dark/light no <html>).
-📝 Markdown & Syntax Highlight
+```
+
+##🔌 Principais hooks e responsabilidades
+useConversations — lista e gerencia conversas (create/update/delete).
+useChat — envia mensagens, salva no Supabase, faz upload de arquivos, processa streaming de resposta.
+useSettings — armazena preferências (localStorage) e expõe update/export/import/reset.
+useDarkMode — aplica html classes (dark/light/auto) e persiste a escolha.
+
+## 🎨 Configurações (Settings) — como o tema é aplicado
+Ao alterar o tema no modal, o app chama useDarkMode.setTheme(...) para aplicar imediatamente.
+Cores primárias (HEX) são convertidas para HSL e aplicadas às CSS variables do :root (ex.: --primary).
+tailwind.config.ts está configurado com darkMode: ['class'] para usar classes dark/light.
+
+## 📝 Markdown & Syntax Highlight
 Renderizamos Markdown com:
+
 react-markdown
 remark-gfm
-rehype-raw + rehype-sanitize (segurança)
+rehype-raw + rehype-sanitize (para segurança)
 rehype-highlight (highlight.js)
-Dependências:
-bash
-Copiar código
-npm install react-markdown remark-gfm rehype-raw rehype-sanitize rehype-highlight highlight.js
-Importe o estilo do highlight em ChatMessage:
-ts
-Copiar código
-import 'highlight.js/styles/github-dark.css';
-🛠️ Debug & Troubleshooting
-Tema não muda:
-Verifique se useDarkMode está instalado e chamado no app root.
-Confirme document.documentElement.classList tem dark ou light.
-tailwind.config.ts deve ter darkMode: ['class'].
-Upload: Bucket not found:
-Verifique nome do bucket (chat-files) e se existe no Storage.
-Erros 401/403 no Supabase:
-Confira VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.
-Markdown / Highlight não funcionam:
-Verifique instalação de rehype-highlight e import do CSS.
-🧩 Boas práticas de segurança
-Nunca coloque service_role no frontend.
-Sanitizar HTML (usamos rehype-sanitize).
-Defina políticas RLS no Supabase para proteger dados por usuário.
-Defina limites de upload no cliente e no storage.
-♻️ Export / Import de configurações
-O modal de configurações permite exportar (.json) e importar preferências.
-Isso facilita backup e sincronização manual.
-🤝 Contribuição
-Fork → branch feature → PR
-Use commits pequenos e descritivos
-Atualize README se adicionar funcionalidades
-📜 License
-MIT © Seu Nome
-
-Se quiser eu:
-
-gero badges (ci, coverage) e GIFs demonstrativos,
-crio CHANGELOG.md inicial,
-adapto o README com screenshots reais do seu projeto.
+Instalação (caso ainda não tenha):
