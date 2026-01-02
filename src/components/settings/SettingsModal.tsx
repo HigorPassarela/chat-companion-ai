@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, User, Palette, MessageSquare, Bot, FolderOpen, Settings as SettingsIcon, Download, Upload, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserSettings } from '@/types/settings';
+import { useDarkMode } from '@/hooks/useDarkMode';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ export const SettingsModal = ({
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [importing, setImporting] = useState(false);
 
+  const { setTheme } = useDarkMode();
+
   const tabs = [
     { id: 'profile', name: 'Perfil', icon: User },
     { id: 'appearance', name: 'Aparência', icon: Palette },
@@ -48,7 +51,7 @@ export const SettingsModal = ({
       alert(error instanceof Error ? error.message : 'Erro ao importar configurações');
     } finally {
       setImporting(false);
-      e.target.value = ''; // Reset input
+      e.target.value = '';
     }
   };
 
@@ -159,7 +162,14 @@ export const SettingsModal = ({
             {activeTab === 'appearance' && (
               <AppearanceSettings
                 settings={settings}
-                onUpdate={onUpdateSettings}
+                onUpdate={(s) => {
+                  // atualiza settings e aplica tema imediatamente via useDarkMode
+                  onUpdateSettings(s);
+                  if (s.theme) {
+                    setTheme(s.theme as 'light' | 'dark');
+                  }
+                  // se primaryColor mudou, assume-se que useSettings cuidará de aplicar CSS vars
+                }}
               />
             )}
             {activeTab === 'chat' && (
@@ -220,6 +230,7 @@ const ProfileSettings = ({ settings, onUpdate }: { settings: UserSettings; onUpd
   </div>
 );
 
+// AppearanceSettings agora usa setTheme do hook useDarkMode via closure acima
 const AppearanceSettings = ({ settings, onUpdate }: { settings: UserSettings; onUpdate: (s: Partial<UserSettings>) => void }) => (
   <div className="space-y-6">
     <div>
