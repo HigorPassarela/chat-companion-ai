@@ -30,6 +30,7 @@ configurações.**
 ---
 
 ## 📸 Screenshots (substitua com seus próprios)
+
 - Configurações
   ![Configurações](./src/hooks/useSettings.ts)
 
@@ -50,8 +51,8 @@ configurações.**
 
 1. Clone o repositório:
    ```bash
-    git clone https://github.com/<seu-usuario>/chat-companion.git
-    cd ollamacode
+    git clone https://github.com/<seu-usuario>/chat-companion.git chat-companion-ai
+    cd chat-companion-ai
     code .
    ```
 
@@ -113,6 +114,7 @@ configurações.**
    ```
 
 2. Storage
+  
   - Crie um bucket chamado `chat-files`.
   - Para desenvolvimento, pode ser público. Em produção, criar políticas RLS apropriadas.
 
@@ -129,3 +131,118 @@ Abra (`http://localhost:3000`) (ou a porta indicada pelo Vite).
 
 Se usar backend local (opcional), rode-o em `VITE_BACKEND_URL` (por exemplo 
 `http://localhost:5000`).
+
+---
+
+## 📁 Estrutura principal do projeto (resumida)
+```css
+  src/
+  components/
+    chat/
+      Sidebar.tsx
+      ChatHeader.tsx
+      ChatMessage.tsx
+      ChatInput.tsx
+      FileAttachment.tsx
+    settings/
+      SettingsModal.tsx
+  hooks/
+    useChat.ts
+    useConversations.ts
+    useSettings.ts
+    useDarkMode.ts
+  lib/
+    supabase.ts
+    color.ts
+  pages/
+    index.tsx
+  styles/
+    index.css
+public/
+  llama.svg
+```
+
+---
+
+## 🔌 Principais hooks e responsabilidades
+
+- `useConversations` -- lista e gerencia conversas (create/update/delete).
+- `useChat` -- envia mensagens, salva no Supabase, faz upload de arquivos, processa
+streaming de resposta.
+- `useSettings` -- armazena preferências (localStorage) e expõe update/export/import/reset.
+- `useDarkMode` -- aplica `html` classes (`dark`/`light`/`auto`) e persiste a escolha.
+
+---
+
+## 🎨 Configurações (Settings) — como o tema é aplicado
+
+- Ao alterar o tema no modal, o app chama `useDarkMode.setTheme(...)` para aplicar
+imediatamente.
+- Cores primárias (HEX) são convertidas para HSL e aplicadas às CSS variables do `:root` (ex.:
+`--primary`).
+- `tailwind.config.ts` está configurado com `darkMode: ['class']` para usar classes `dark`/`light`.
+
+---
+
+## 📝 Markdown & Syntax Highlight
+Renderizamos Markdown com:
+
+- `react-markdown`
+- `remark-gfm`
+- `rehype-raw` + `rehype-sanitize` (para segurança)
+- `rehype-highlight` (highlight.js)
+
+Instalação (caso ainda não tenha):
+```bash
+  npm install react-markdown remark-gfm rehype-raw rehype-sanitize rehype-highlight highlight.js
+```
+
+No componente `ChatMessage` importamos um tema do highlight.js, por exemplo:
+```ts
+  import 'highlight.js/styles/github-dark.css';
+```
+
+---
+
+## 🛠️ Debug & Troubleshooting
+
+- ## Tema não muda:
+  - Verifique se `useDarkMode` está inicializando no root (Index) e que o `<html>` tem class `dark` ou `light`.
+  - `tailwind.config.ts` deve ter `darkMode: ['class']`.
+- ## Upload: Bucket not found:
+  - Verifique se o bucket `chat-files` existe no Supabase Storage.
+- ## Erros 401/403 no Supabase:
+  - Confira `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
+- ## Markdown / Highlight não aparecem:
+  - Verifique instalação de `rehype-highlight` e import do CSS do highlight.js.
+
+---
+
+## 🔒 Boas práticas de segurança
+
+- Não colocar `service_role` key no frontend.
+- Usar `rehype-sanitize` quando aceitam HTML vindo da IA.
+- Implementar políticas RLS quando houver autenticação por usuário.
+- Limitar tipos e tamanhos de arquivos no upload.
+
+---
+
+## ♻️ Export / Import de configurações
+
+- O modal de configurações permite exportar (`.json`) e importar preferências do usuário (backup/restore).
+
+---
+
+## 🤝 Contribuição
+
+1. Fork -> branch feature -> PR.
+2. Use commits claros e descritivos.
+3. Atualize README quando adicionar funcionalidades relevantes.
+
+---
+
+## 📜 License
+
+MIT © Higor Passarela
+
+---
