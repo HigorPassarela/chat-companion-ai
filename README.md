@@ -31,10 +31,10 @@ configurações.**
 
 ## 📸 Screenshots (substitua com seus próprios)
 - Configurações
-  ![Configurações](./public/docs/settings.png)
+  ![Configurações](./src/hooks/useSettings.ts)
 
 - Chat com arquivo anexado
-  ![File preview](./public/docs/file-preview.png)
+  ![File preview](./src/hooks/useChat.ts)
 
 ---
 
