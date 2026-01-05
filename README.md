@@ -113,7 +113,7 @@ configurações.**
    ```
 
 2. Storage
-  - Crie um bucket chamado (`chat-files`).
+  - Crie um bucket chamado `chat-files`.
   - Para desenvolvimento, pode ser público. Em produção, criar políticas RLS apropriadas.
 
 ---
@@ -127,5 +127,5 @@ Frontend:
 
 Abra (`http://localhost:3000`) (ou a porta indicada pelo Vite).
 
-Se usar backend local (opcional), rode-o em (`VITE_BACKEND_URL`) (por exemplo 
-(`http://localhost:5000`)).
+Se usar backend local (opcional), rode-o em `VITE_BACKEND_URL` (por exemplo 
+`http://localhost:5000`).
