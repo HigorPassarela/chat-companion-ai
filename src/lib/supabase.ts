@@ -11,7 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ===== TIPOS =====
 
-// 🆕 Tipos de autenticação
+// Tipos de autenticação
 export interface Profile {
   id: string;
   email: string;
@@ -32,7 +32,7 @@ export interface AuthUser {
 export interface Message {
   id?: number;
   conversation_id: number;
-  user_id?: string; // 🆕 Adicionado
+  user_id?: string; 
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
@@ -43,7 +43,7 @@ export interface Message {
 export interface Conversation {
   id: number;
   title: string;
-  user_id?: string; // 🆕 Adicionado
+  user_id?: string; 
   created_at: string;
   updated_at: string;
   message_count?: number;
@@ -52,7 +52,7 @@ export interface Conversation {
 export interface ConversationInput {
   id?: number;
   title: string;
-  user_id?: string; // 🆕 Adicionado
+  user_id?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -60,7 +60,7 @@ export interface ConversationInput {
 export interface FileAttachment {
   id?: number;
   message_id: number;
-  user_id?: string; // 🆕 Adicionado
+  user_id?: string; 
   filename: string;
   file_type: string;
   file_size: number;
@@ -154,7 +154,7 @@ export async function autoUpdateConversationTitle(conversationId: number, firstM
 }
 
 /**
- * Criar nova conversa (🆕 com autenticação)
+ * Criar nova conversa (com autenticação)
  */
 export async function createConversation(title = 'Nova Conversa'): Promise<Conversation> {
   console.log('[Supabase] Criando conversa:', title);
@@ -168,7 +168,7 @@ export async function createConversation(title = 'Nova Conversa'): Promise<Conve
     .from('conversations')
     .insert({ 
       title,
-      user_id: userId // 🆕 Incluir user_id
+      user_id: userId 
     })
     .select('id, title, user_id, created_at, updated_at')
     .single();
@@ -215,7 +215,6 @@ export async function createConversation(title = 'Nova Conversa'): Promise<Conve
       return [];
     }
 
-    // 🔥 VERSÃO SIMPLIFICADA: Cast direto com validação básica
     const validConversations: Conversation[] = data
       .filter(conv => {
         const isValid = conv && 
@@ -250,7 +249,7 @@ export async function createConversation(title = 'Nova Conversa'): Promise<Conve
 }
 
 /**
- * Buscar conversa por ID (🆕 com verificação de usuário)
+ * Buscar conversa por ID (com verificação de usuário)
  */
 export async function getConversation(id: number): Promise<Conversation | null> {
   const userId = await getCurrentUserId();
@@ -262,7 +261,7 @@ export async function getConversation(id: number): Promise<Conversation | null> 
     .from('conversations')
     .select('id, title, user_id, created_at, updated_at')
     .eq('id', id)
-    .eq('user_id', userId) // 🆕 Verificar se pertence ao usuário
+    .eq('user_id', userId) 
     .single();
 
   if (error) {
@@ -274,7 +273,7 @@ export async function getConversation(id: number): Promise<Conversation | null> 
 }
 
 /**
- * Atualizar título da conversa (🆕 com verificação de usuário)
+ * Atualizar título da conversa (com verificação de usuário)
  */
 export async function updateConversationTitle(id: number, title: string): Promise<void> {
   const userId = await getCurrentUserId();
@@ -289,7 +288,7 @@ export async function updateConversationTitle(id: number, title: string): Promis
       updated_at: new Date().toISOString()
     })
     .eq('id', id)
-    .eq('user_id', userId); // 🆕 Verificar se pertence ao usuário
+    .eq('user_id', userId); 
 
   if (error) {
     console.error('[Supabase] Erro ao atualizar título:', error);
@@ -300,7 +299,7 @@ export async function updateConversationTitle(id: number, title: string): Promis
 }
 
 /**
- * Deletar conversa (🆕 com verificação de usuário)
+ * Deletar conversa (com verificação de usuário)
  */
 export async function deleteConversation(id: number): Promise<void> {
   const userId = await getCurrentUserId();
@@ -312,7 +311,7 @@ export async function deleteConversation(id: number): Promise<void> {
     .from('conversations')
     .delete()
     .eq('id', id)
-    .eq('user_id', userId); // 🆕 Verificar se pertence ao usuário
+    .eq('user_id', userId); 
 
   if (error) {
     console.error('[Supabase] Erro ao deletar conversa:', error);
@@ -323,7 +322,7 @@ export async function deleteConversation(id: number): Promise<void> {
 }
 
 /**
- * Salvar mensagem (🆕 com user_id)
+ * Salvar mensagem (com user_id)
  */
 export async function saveMessage(message: Message): Promise<Message> {
   const userId = await getCurrentUserId();
@@ -331,7 +330,6 @@ export async function saveMessage(message: Message): Promise<Message> {
     throw new Error('Usuário não autenticado');
   }
 
-  // 🆕 Incluir user_id na mensagem
   const messageWithUserId = {
     ...message,
     user_id: userId
@@ -353,14 +351,14 @@ export async function saveMessage(message: Message): Promise<Message> {
     .from('conversations')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', message.conversation_id)
-    .eq('user_id', userId); // 🆕 Verificar se pertence ao usuário
+    .eq('user_id', userId); 
 
   console.log('[Supabase] Mensagem salva:', data.id);
   return data;
 }
 
 /**
- * Buscar mensagens de uma conversa (🆕 com verificação de usuário)
+ * Buscar mensagens de uma conversa (com verificação de usuário)
  */
 export async function getMessages(conversationId: number): Promise<Message[]> {
   const userId = await getCurrentUserId();
@@ -393,7 +391,7 @@ export async function getMessages(conversationId: number): Promise<Message[]> {
 }
 
 /**
- * Salvar arquivo no Storage e criar registro no banco (🆕 com user_id)
+ * Salvar arquivo no Storage e criar registro no banco (com user_id)
  */
 export async function saveFile(messageId: number, file: File): Promise<FileAttachment> {
   try {
@@ -404,10 +402,10 @@ export async function saveFile(messageId: number, file: File): Promise<FileAttac
 
     console.log('[Supabase] Iniciando upload:', file.name);
 
-    // 1. Gerar nome único para o arquivo (🆕 incluir userId no path)
+    // 1. Gerar nome único para o arquivo (incluir userId no path)
     const timestamp = Date.now();
     const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileName = `${userId}/${timestamp}_${cleanFileName}`; // 🆕 Organizar por usuário
+    const fileName = `${userId}/${timestamp}_${cleanFileName}`;
 
     console.log('[Supabase] Fazendo upload como:', fileName);
 
@@ -447,14 +445,14 @@ export async function saveFile(messageId: number, file: File): Promise<FileAttac
       }
     }
 
-    // 5. Salvar referência no banco (🆕 com user_id)
+    // 5. Salvar referência no banco (com user_id)
     console.log('[Supabase] Salvando referência no banco...');
 
     const { data, error } = await supabase
       .from('files')
       .insert({
         message_id: messageId,
-        user_id: userId, // 🆕 Incluir user_id
+        user_id: userId, 
         filename: file.name,
         file_type: file.type,
         file_size: file.size,
@@ -513,7 +511,7 @@ export async function getFilesByMessage(messageId: number): Promise<FileAttachme
 }
 
 /**
- * Deletar arquivo do Storage e banco (🆕 com verificação de usuário)
+ * Deletar arquivo do Storage e banco (com verificação de usuário)
  */
 export async function deleteFile(fileId: number): Promise<void> {
   try {
@@ -522,12 +520,12 @@ export async function deleteFile(fileId: number): Promise<void> {
       throw new Error('Usuário não autenticado');
     }
 
-    // 1. Buscar informações do arquivo (🆕 verificar se pertence ao usuário)
+    // 1. Buscar informações do arquivo (verificar se pertence ao usuário)
     const { data: fileData, error: fetchError } = await supabase
       .from('files')
       .select('file_url, user_id')
       .eq('id', fileId)
-      .eq('user_id', userId) // 🆕 Verificar se pertence ao usuário
+      .eq('user_id', userId)
       .single();
 
     if (fetchError) {
@@ -542,7 +540,7 @@ export async function deleteFile(fileId: number): Promise<void> {
       // 3. Deletar do Storage
       const { error: storageError } = await supabase.storage
         .from('chat-files')
-        .remove([`${userId}/${fileName}`]); // 🆕 Incluir userId no path
+        .remove([`${userId}/${fileName}`]);
 
       if (storageError) {
         console.warn('[Supabase] Erro ao deletar do storage:', storageError);
@@ -554,7 +552,7 @@ export async function deleteFile(fileId: number): Promise<void> {
       .from('files')
       .delete()
       .eq('id', fileId)
-      .eq('user_id', userId); // 🆕 Verificar se pertence ao usuário
+      .eq('user_id', userId); 
 
     if (dbError) {
       console.error('[Supabase] Erro ao deletar do banco:', dbError);
@@ -594,7 +592,7 @@ export async function testConnection(): Promise<boolean> {
   }
 }
 
-// 🆕 FUNÇÕES ESPECÍFICAS DE PERFIL
+// FUNÇÕES ESPECÍFICAS DE PERFIL
 
 /**
  * Atualizar perfil do usuário
