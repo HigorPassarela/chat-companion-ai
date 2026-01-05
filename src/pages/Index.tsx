@@ -6,14 +6,71 @@ import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { Sidebar } from "@/components/chat/Sidebar";
 import { SidebarToggle } from "@/components/chat/SidebarToggle";
 import { SettingsModal } from "@/components/settings/SettingsModal";
+import { AuthModal } from "@/components/auth/AuthModal";
 import { useChat } from "@/hooks/useChat";
 import { useConversations } from "@/hooks/useConversations";
 import { useBackendStatus } from "@/hooks/useBackendStatus";
 import { useSettings } from "@/hooks/useSettings";
-import { MessageSquare, WifiOff, Sparkles, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { MessageSquare, WifiOff, Sparkles, AlertTriangle, Loader2, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Index = () => {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // 🔥 LÓGICA DE AUTENTICAÇÃO NO INÍCIO
+  // Se está carregando
+  if (authLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground mb-4">Carregando autenticação...</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs text-muted-foreground hover:text-foreground underline"
+          >
+            Clique aqui se demorar muito
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Se não está autenticado
+  if (!user) {
+    return (
+      <>
+        <div className="h-screen flex items-center justify-center bg-background">
+          <div className="text-center max-w-md mx-auto p-6">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shadow-lg mx-auto mb-6">
+              <MessageSquare className="w-10 h-10 text-primary" />
+            </div>
+            
+            <h1 className="text-3xl font-bold mb-2">OllamaCode</h1>
+            <p className="text-muted-foreground mb-6">
+              Entre ou crie uma conta para começar.
+            </p>
+            
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            >
+              Entrar / Criar Conta
+            </button>
+          </div>
+        </div>
+
+        <AuthModal 
+          isOpen={showAuthModal} 
+          onClose={() => setShowAuthModal(false)} 
+        />
+      </>
+    )
+  }
+
+  // 🔥 RESTO DO CÓDIGO QUANDO AUTENTICADO
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window !== "undefined") return window.innerWidth >= 1024;
     return true;
@@ -56,6 +113,13 @@ const Index = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Função de logout
+  const handleLogout = useCallback(async () => {
+    if (window.confirm('Tem certeza que deseja sair?')) {
+      await signOut();
+    }
+  }, [signOut]);
 
   // sync conversation id between hooks
   useEffect(() => {
@@ -201,8 +265,8 @@ const Index = () => {
         onDeleteConversation={handleDeleteConversation}
         onRenameConversation={handleRenameConversation}
         onOpenSettings={handleOpenSettings}
-        username={settings.username}
-        userAvatar={settings.avatar}
+        username={user?.profile?.username || user?.email || 'Usuário'}
+        userAvatar={user?.profile?.avatar_url}
         loading={conversationsLoading}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -215,6 +279,23 @@ const Index = () => {
         )}
       >
         <div className="flex-shrink-0">
+          {/* Header com info do usuário */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Logado como: <span className="font-medium text-foreground">{user?.profile?.username || user?.email}</span>
+              </span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-muted/50"
+              title="Sair da conta"
+            >
+              <LogOut className="w-4 h-4" />
+              Sair
+            </button>
+          </div>
+
           <ChatHeader
             online={online}
             onClearChat={handleClearChat}
@@ -263,7 +344,9 @@ const Index = () => {
                     </div>
                   </div>
 
-                  <h2 className="text-2xl font-bold text-foreground mb-2">Olá! Sou a OllamaCode</h2>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">
+                    Olá, {user?.profile?.username || user?.email?.split('@')[0]}! 
+                  </h2>
                   <p className="text-muted-foreground text-sm max-w-md mb-8 px-4">
                     {online
                       ? "Estou aqui para ajudar com programação, explicar conceitos e analisar código. Como posso ajudar você hoje?"
@@ -355,6 +438,11 @@ const Index = () => {
               <button onClick={() => setShowDebugPanel(false)} className="text-gray-400 hover:text-white text-sm">✕</button>
             </div>
 
+            <div className="flex items-center gap-2 text-[10px]">
+              <span className="text-gray-400">Usuário:</span>
+              <span className="text-green-400">{user?.email || 'Não logado'}</span>
+            </div>
+
             <div className="flex items-center gap-2 text-[10px]"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> <span className="sm:hidden">XS (&lt;640px)</span></div>
 
             <div className="flex items-center gap-2 text-[10px]"><span className="text-gray-400">Sidebar:</span><span className={sidebarOpen ? "text-green-400" : "text-red-400"}>{sidebarOpen ? "Aberta" : "Fechada"}</span></div>
@@ -367,12 +455,11 @@ const Index = () => {
 
             <div className="text-[10px] text-gray-400">{typeof window !== "undefined" && `${window.innerWidth}px × ${window.innerHeight}px`}</div>
 
-            <div className="text-[9px] text-gray-500 pt-1 border-t border-white/10 space-y-0.5"><div><kbd className="px-1 bg-white/10 rounded">Ctrl+B</kbd> Toggle Sidebar</div><div><kbd className="px-1 bg-white/10 rounded">Ctrl+Shift+D</kbd> Toggle Debug</div><div><kbd className="px-1 bg-white/10 rounded">Ctrl+Shift+H</kbd> Toggle Debug (Alt)</div></div>
+            <div className="text-[9px] text-gray-500 pt-1 border-t border-white/10 space-y-0.5"><div><kbd className="px-1 bg-white/10 rounded">Ctrl+B</kbd> Toggle Sidebar</div><div><kbd className="px-1 bg-white/10 rounded">Ctrl+Shift+D</kbd> Toggle Debug</div></div>
           </div>
         </div>
       )}
 
-      {/* Settings modal */}
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}

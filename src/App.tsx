@@ -5,11 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useDarkMode } from "./hooks/useDarkMode";
 import ThemeSelector from "./components/chat/ThemeSelector";
-import { SettingsModal } from "./components/settings/SettingsModal";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +33,7 @@ const App = () => {
       className="min-h-screen bg-background text-foreground transition-all duration-300"
     >
       <QueryClientProvider client={queryClient}>
+        <AuthProvider>
         <TooltipProvider>
           <ThemeSelector />
           <Toaster />
@@ -44,6 +45,7 @@ const App = () => {
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </div>
   );
