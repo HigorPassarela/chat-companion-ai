@@ -13,15 +13,15 @@ export const ChatHeader = ({ online, onClearChat, messageCount = 0 }: ChatHeader
     <header className="glass border-b border-border/50 sticky top-0 z-10">
       <div className={cn(
         "max-w-3xl mx-auto px-4 py-3 flex items-center justify-between",
-        "lg:px-4", // Padding normal em desktop
-        "chat-header-mobile-padding" // Padding extra no mobile para o botão toggle
+        "lg:px-4",
+        "chat-header-mobile-padding"
       )}>
         {/* Logo e status */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-          <img 
-              src="/llama.svg" 
-              alt="OllamaCode Logo" 
+            <img
+              src="/llama.svg"
+              alt="OllamaCode Logo"
               className="w-full h-full object-contain"
             />
           </div>

@@ -20,8 +20,8 @@ export const useBackendStatus = () => {
   }
 
   useEffect(() => {
-    checkBackend();                      
-    const timer = setInterval(checkBackend, 10000); 
+    checkBackend();
+    const timer = setInterval(checkBackend, 20000);
     return () => clearInterval(timer);
   }, []);
 

@@ -30,8 +30,8 @@ export const SidebarToggle = ({ isOpen, onToggle }: SidebarToggleProps) => {
           <Menu
             className={cn(
               "absolute inset-0 text-sidebar-foreground transition-all duration-200",
-              isOpen 
-                ? "opacity-0 rotate-90 scale-0" 
+              isOpen
+                ? "opacity-0 rotate-90 scale-0"
                 : "opacity-100 rotate-0 scale-100"
             )}
           />
@@ -39,8 +39,8 @@ export const SidebarToggle = ({ isOpen, onToggle }: SidebarToggleProps) => {
           <X
             className={cn(
               "absolute inset-0 text-sidebar-foreground transition-all duration-200",
-              isOpen 
-                ? "opacity-100 rotate-0 scale-100" 
+              isOpen
+                ? "opacity-100 rotate-0 scale-100"
                 : "opacity-0 -rotate-90 scale-0"
             )}
           />
@@ -51,7 +51,7 @@ export const SidebarToggle = ({ isOpen, onToggle }: SidebarToggleProps) => {
       <button
         onClick={onToggle}
         className={cn(
-          "hidden lg:flex", // Mostra apenas em desktop
+          "hidden lg:flex", 
           "fixed top-4 z-50",
           "p-2.5 rounded-lg",
           "bg-sidebar/95 backdrop-blur-sm",
@@ -63,7 +63,7 @@ export const SidebarToggle = ({ isOpen, onToggle }: SidebarToggleProps) => {
           "items-center justify-center"
         )}
         style={{
-          left: isOpen ? "252px" : "16px", // 260px (sidebar) - 8px (ajuste)
+          left: isOpen ? "252px" : "16px", 
         }}
         aria-label={isOpen ? "Recolher sidebar" : "Expandir sidebar"}
       >
@@ -72,8 +72,8 @@ export const SidebarToggle = ({ isOpen, onToggle }: SidebarToggleProps) => {
           <ChevronLeft
             className={cn(
               "absolute inset-0 text-sidebar-foreground transition-all duration-300",
-              isOpen 
-                ? "opacity-100 rotate-0 scale-100" 
+              isOpen
+                ? "opacity-100 rotate-0 scale-100"
                 : "opacity-0 rotate-180 scale-0"
             )}
           />
@@ -81,8 +81,8 @@ export const SidebarToggle = ({ isOpen, onToggle }: SidebarToggleProps) => {
           <ChevronRight
             className={cn(
               "absolute inset-0 text-sidebar-foreground transition-all duration-300",
-              isOpen 
-                ? "opacity-0 -rotate-180 scale-0" 
+              isOpen
+                ? "opacity-0 -rotate-180 scale-0"
                 : "opacity-100 rotate-0 scale-100"
             )}
           />

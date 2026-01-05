@@ -1,5 +1,12 @@
+import React from "react";
 import { User } from "lucide-react";
+import 'highlight.js/styles/github-dark.css';
 import { FileAttachment } from "./FileAttachment";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import rehypeHighlight from "rehype-highlight";
 
 interface ChatMessageProps {
   content: string;
@@ -16,10 +23,10 @@ interface ChatMessageProps {
   }>;
 }
 
-export const ChatMessage = ({ 
-  content, 
-  role, 
-  imageUrl, 
+export const ChatMessage = ({
+  content,
+  role,
+  imageUrl,
   isNew = false,
   files
 }: ChatMessageProps) => {
@@ -27,9 +34,7 @@ export const ChatMessage = ({
 
   return (
     <div
-      className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""} ${
-        isNew ? "animate-fade-in-up" : ""
-      }`}
+      className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""} ${isNew ? "animate-fade-in-up" : ""}`}
     >
       <div
         className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
@@ -39,11 +44,7 @@ export const ChatMessage = ({
         {isUser ? (
           <User className="w-4 h-4 text-secondary-foreground" />
         ) : (
-          <img 
-            src="/llama.svg" 
-            alt="OllamaCode" 
-            className="w-5 h-5 object-contain"
-          />
+          <img src="/llama.svg" alt="OllamaCode" className="w-5 h-5 object-contain" />
         )}
       </div>
 
@@ -54,7 +55,7 @@ export const ChatMessage = ({
             : "bg-ai-bubble text-foreground rounded-bl-md border border-border/50"
         }`}
       >
-        {/* Mostrar arquivos anexados */}
+        {/* Arquivos anexados (se houver) */}
         {files && files.length > 0 && (
           <div className="mb-3 space-y-2">
             {files.map((file) => (
@@ -70,18 +71,42 @@ export const ChatMessage = ({
           </div>
         )}
 
-        {/* Texto da mensagem */}
-        {content && (
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
-        )}
+        {/* Markdown rendering (suporta **bold**, `inline code`, ```code blocks```, lists, links etc.) */}
+        <div className="prose prose-sm max-w-none dark:prose-invert">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw, rehypeSanitize, rehypeHighlight]}
+            components={{
+              // links abrem em nova aba com segurança
+              a: ({ node, ...props }) => (
+                <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary underline" />
+              ),
+              // custom renderer para code (inline e block)
+              code({ node, inline, className, children, ...props }: any) {
+                const match = /language-(\w+)/.exec(className || "");
+                if (!inline && match) {
+                  // bloco de código com linguagem: rehype-highlight já fará highlight
+                  return (
+                    <pre className="bg-black/20 p-3 rounded-md overflow-auto text-sm"><code className={className} {...props}>{String(children).replace(/\n$/, "")}</code></pre>
+                  );
+                }
+                // código inline: estilo simples
+                return (
+                  <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono" {...props}>
+                    {children}
+                  </code>
+                );
+              },
+              // opcional: customizar listas/paragraphs se quiser
+            }}
+          >
+            {content || ""}
+          </ReactMarkdown>
+        </div>
 
-        {/* Imagem enviada (para compatibilidade com versões antigas) */}
+        {/* Imagem enviada (compatibilidade) */}
         {imageUrl && !files?.length && (
-          <img
-            src={imageUrl}
-            alt="Imagem enviada"
-            className="mt-2 rounded-lg max-h-64 object-contain"
-          />
+          <img src={imageUrl} alt="Imagem enviada" className="mt-2 rounded-lg max-h-64 object-contain" />
         )}
       </div>
     </div>

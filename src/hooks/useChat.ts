@@ -45,7 +45,7 @@ export const useChat = (initialConversationId?: number) => {
     try {
       console.log(`[useChat] Carregando mensagens da conversa ${convId}`);
       const data = await getMessages(convId);
-      
+
       const formattedMessages: Message[] = data.map((msg: any) => ({
         id: msg.id!.toString(),
         content: msg.content,
@@ -54,7 +54,7 @@ export const useChat = (initialConversationId?: number) => {
         imageUrl: msg.files?.[0]?.file_url || undefined,
         files: msg.files || [],
       }));
-      
+
       setMessages(formattedMessages);
       console.log(`[useChat] ${formattedMessages.length} mensagens carregadas`);
     } catch (error) {
@@ -69,7 +69,7 @@ export const useChat = (initialConversationId?: number) => {
         // Criar conversa se não existir
         let convId = currentConversationId;
         let isNewConversation = false;
-        
+
         if (!convId) {
           const conversation = await createConversation();
           convId = conversation.id!;
@@ -123,26 +123,26 @@ export const useChat = (initialConversationId?: number) => {
         let fileContent = null;
         if (imageFile && savedUserMessage.id) {
           const savedFile = await saveFile(savedUserMessage.id, imageFile);
-          
+
           // Atualizar a mensagem com os dados reais do arquivo
-          setMessages((prev) => 
-            prev.map((msg) => 
-              msg.id === timestamp.toString() 
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === timestamp.toString()
                 ? {
-                    ...msg,
-                    files: [{
-                      id: savedFile.id!,
-                      filename: savedFile.filename,
-                      file_type: savedFile.file_type,
-                      file_size: savedFile.file_size,
-                      file_url: savedFile.file_url!,
-                      file_content: savedFile.file_content
-                    }]
-                  }
+                  ...msg,
+                  files: [{
+                    id: savedFile.id!,
+                    filename: savedFile.filename,
+                    file_type: savedFile.file_type,
+                    file_size: savedFile.file_size,
+                    file_url: savedFile.file_url!,
+                    file_content: savedFile.file_content
+                  }]
+                }
                 : msg
             )
           );
-          
+
           // Ler conteúdo se for texto
           const textExtensions = ['txt', 'csv', 'json', 'py', 'js', 'jsx', 'ts', 'tsx', 'html', 'css'];
           const extension = imageFile.name.split('.').pop()?.toLowerCase();
@@ -251,9 +251,8 @@ export const useChat = (initialConversationId?: number) => {
           ...prev,
           {
             id: (Date.now() + 1).toString(),
-            content: `Erro ao conectar: ${
-              error instanceof Error ? error.message : "Erro desconhecido"
-            }`,
+            content: `Erro ao conectar: ${error instanceof Error ? error.message : "Erro desconhecido"
+              }`,
             role: "assistant",
             timestamp: Date.now(),
           },
